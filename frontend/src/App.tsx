@@ -1,28 +1,16 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-
-// Example page components
-function Home() {
-  return <h1>Home Page</h1>
-}
-
-function About() {
-  return <h1>About Page</h1>
-}
-
-function Contact() {
-  return <h1>Contact Page</h1>
-}
+import { AUTH_ROUTE } from './CONSTANTS'
+import { AuthPage } from './components/auth/auth'
 
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/contact" element={<Contact />} />
+          <Route path={"/"} element={<AuthPage />} />,
+          <Route path={AUTH_ROUTE} element={<AuthPage />} />
       </Routes>
     </Router>
   )
 }
 
-export default App;
+export default App
