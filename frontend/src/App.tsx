@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import { AUTH_ROUTE } from './CONSTANTS'
+import { AUTH_ROUTE } from './utils/CONSTANTS.ts'
 import { AuthPage } from './components/auth/auth'
 
 function App() {
