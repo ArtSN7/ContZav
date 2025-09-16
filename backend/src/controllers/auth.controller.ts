@@ -1,8 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import { supabase } from '../services/supabase.service.js';
-import { UserModel } from '../models/User.js';
+import { UserModel } from '../models/User.model.js';
+import { OAuthService } from '../services/oauth.service.js';
+import { generateState, getGoogleAuthUrl, getVKAuthUrl, getAppleAuthUrl } from '../utils/oauth.utils.js';
 import { AppError } from '../exceptions/AppError.js';
-import { loginSchema, registerSchema } from '../dtos/auth.dto.js';
+import { loginSchema, registerSchema, oauthCallbackSchema } from '../dtos/auth.dto.js';
 
 export class AuthController {
     static async register(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -16,9 +18,14 @@ export class AuthController {
 
             if (authError) throw new AppError(authError.message, 400);
 
-            const user = await UserModel.updateProfile(authData.user!.id, {
-                name: validatedData.name,
+            const user = await UserModel.create({
+                id: authData.user!.id,
                 email: validatedData.email,
+                name: validatedData.name,
+                company: validatedData.company,
+                expertise: validatedData.expertise,
+                phone: validatedData.phone,
+                website: validatedData.website,
             });
 
             res.status(201).json({
@@ -81,4 +88,242 @@ export class AuthController {
             next(error);
         }
     }
+
+    static async googleAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const state = generateState();
+            const authUrl = getGoogleAuthUrl(state);
+
+            res.json({
+                success: true,
+                data: { authUrl, state },
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    static async googleCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const { code, state } = oauthCallbackSchema.parse(req.query);
+
+            const { tokens, profile } = await OAuthService.exchangeGoogleCode(code as string);
+
+            let user = await UserModel.findByEmail(profile.email);
+            let isNewUser = false;
+
+            if (!user) {
+                const { data: authData, error: authError } = await supabase.auth.signUp({
+                    email: profile.email,
+                    password: randomBytes(32).toString('hex'),
+                });
+
+                if (authError) throw new AppError(authError.message, 400);
+
+                user = await UserModel.create({
+                    id: authData.user!.id,
+                    email: profile.email,
+                    name: profile.name,
+                    avatar_url: profile.picture,
+                });
+                isNewUser = true;
+            }
+
+            await UserModel.upsertSocialAccount({
+                user_id: user.id,
+                platform: 'google',
+                platform_user_id: profile.id,
+                email: profile.email,
+                username: profile.name,
+                access_token: tokens.access_token,
+                refresh_token: tokens.refresh_token,
+                expires_at: tokens.expires_in ? Date.now() + tokens.expires_in * 1000 : undefined,
+                profile_data: profile,
+            });
+
+            const { data: sessionData } = await supabase.auth.signInWithPassword({
+                email: user.email,
+                password: '',
+            });
+
+            res.json({
+                success: true,
+                data: {
+                    user,
+                    session: sessionData.session,
+                    isNewUser,
+                },
+                message: 'Google authentication successful',
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    static async vkAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const state = generateState();
+            const authUrl = getVKAuthUrl(state);
+
+            res.json({
+                success: true,
+                data: { authUrl, state },
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    static async vkCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const { code, state } = oauthCallbackSchema.parse(req.query);
+
+            const { tokens, profile } = await OAuthService.exchangeVKCode(code as string);
+
+            let user = await UserModel.findByEmail(profile.email);
+            let isNewUser = false;
+
+            if (!user) {
+                const { data: authData, error: authError } = await supabase.auth.signUp({
+                    email: profile.email,
+                    password: randomBytes(32).toString('hex'),
+                });
+
+                if (authError) throw new AppError(authError.message, 400);
+
+                user = await UserModel.create({
+                    id: authData.user!.id,
+                    email: profile.email,
+                    name: profile.name,
+                    avatar_url: profile.picture,
+                });
+                isNewUser = true;
+            }
+
+            await UserModel.upsertSocialAccount({
+                user_id: user.id,
+                platform: 'vkontakte',
+                platform_user_id: profile.id,
+                email: profile.email,
+                username: profile.name,
+                access_token: tokens.access_token,
+                expires_at: tokens.expires_in ? Date.now() + tokens.expires_in * 1000 : undefined,
+                profile_data: profile,
+            });
+
+            const { data: sessionData } = await supabase.auth.signInWithPassword({
+                email: user.email,
+                password: '',
+            });
+
+            res.json({
+                success: true,
+                data: {
+                    user,
+                    session: sessionData.session,
+                    isNewUser,
+                },
+                message: 'VK authentication successful',
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    static async appleAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const state = generateState();
+            const authUrl = getAppleAuthUrl(state);
+
+            res.json({
+                success: true,
+                data: { authUrl, state },
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    static async appleCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const { code, state } = req.body;
+
+            const { tokens, profile } = await OAuthService.exchangeAppleCode(code);
+
+            let user = await UserModel.findByEmail(profile.email);
+            let isNewUser = false;
+
+            if (!user) {
+                const { data: authData, error: authError } = await supabase.auth.signUp({
+                    email: profile.email,
+                    password: randomBytes(32).toString('hex'),
+                });
+
+                if (authError) throw new AppError(authError.message, 400);
+
+                user = await UserModel.create({
+                    id: authData.user!.id,
+                    email: profile.email,
+                    name: profile.name,
+                });
+                isNewUser = true;
+            }
+
+            await UserModel.upsertSocialAccount({
+                user_id: user.id,
+                platform: 'apple',
+                platform_user_id: profile.id,
+                email: profile.email,
+                username: profile.name,
+                access_token: tokens.access_token,
+                refresh_token: tokens.refresh_token,
+                expires_at: tokens.expires_in ? Date.now() + tokens.expires_in * 1000 : undefined,
+                profile_data: profile,
+            });
+
+            const { data: sessionData } = await supabase.auth.signInWithPassword({
+                email: user.email,
+                password: '',
+            });
+
+            res.json({
+                success: true,
+                data: {
+                    user,
+                    session: sessionData.session,
+                    isNewUser,
+                },
+                message: 'Apple authentication successful',
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    static async refreshToken(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const { refresh_token } = req.body;
+
+            const { data, error } = await supabase.auth.refreshSession({
+                refresh_token,
+            });
+
+            if (error) throw new AppError('Token refresh failed', 401);
+
+            res.json({
+                success: true,
+                data: {
+                    access_token: data.session.access_token,
+                    refresh_token: data.session.refresh_token,
+                    expires_at: data.session.expires_at,
+                },
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+}
+
+function randomBytes(arg0: number) {
+    throw new Error('Function not implemented.');
 }

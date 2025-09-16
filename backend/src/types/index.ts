@@ -7,38 +7,42 @@ export interface AuthUser {
     phone?: string;
     website?: string;
     avatar_url?: string;
-}
-
-export interface ContentData {
-    id: string;
-    user_id: string;
-    title: string;
-    description: string;
-    niche: string;
-    content_type: 'video' | 'text' | 'combination';
-    generated_content: any;
-    platforms: string[];
-    status: 'draft' | 'published' | 'scheduled';
-    tags?: string[];
     created_at: Date;
-}
-
-export interface AnalyticsData {
-    id: string;
-    content_id: string;
-    platform: string;
-    views: number;
-    engagement: number;
-    clicks: number;
-    date: Date;
+    updated_at: Date;
 }
 
 export interface SocialAccount {
     id: string;
     user_id: string;
-    platform: string;
+    platform: 'google' | 'vk' | 'apple' | 'youtube' | 'instagram' | 'telegram' | 'vkontakte';
+    platform_user_id: string;
+    email: string;
     username: string;
+    access_token: string;
+    refresh_token?: string;
+    expires_at?: number;
+    profile_data: any;
     followers: number;
     last_sync: Date;
     is_connected: boolean;
+    created_at: Date;
+    updated_at: Date;
+}
+
+export interface OAuthToken {
+    access_token: string;
+    refresh_token?: string;
+    expires_in?: number;
+    token_type?: string;
+    scope?: string;
+}
+
+export interface OAuthProfile {
+    id: string;
+    email: string;
+    name?: string;
+    given_name?: string;
+    family_name?: string;
+    picture?: string;
+    locale?: string;
 }
