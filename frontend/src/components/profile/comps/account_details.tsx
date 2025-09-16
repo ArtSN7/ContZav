@@ -10,9 +10,22 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Camera, Save, User } from "lucide-react"
 
-export function AccountDetails() {
-  const [isEditing, setIsEditing] = useState(false)
-  const [formData, setFormData] = useState({
+// Интерфейс для типизации данных профиля
+interface ProfileData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  company: string;
+  bio: string;
+  website: string;
+  avatarUrl?: string;
+  badges: { variant: "default" | "secondary"; label: string }[];
+}
+
+// Функция для получения данных профиля (пока с мок-данными)
+const getProfileData = (): ProfileData => {
+  return {
     firstName: "Иван",
     lastName: "Петров",
     email: "ivan@example.com",
@@ -20,17 +33,27 @@ export function AccountDetails() {
     company: "ООО 'СтройМатериалы'",
     bio: "Эксперт в области строительных материалов с 10-летним опытом работы в отрасли.",
     website: "https://stroymaterials.ru",
-  })
+    avatarUrl: "https://api.dicebear.com/9.x/adventurer/svg?seed=Amaya",
+    badges: [
+      { variant: "default", label: "Pro Plan" },
+      { variant: "secondary", label: "Верифицирован" },
+    ],
+  };
+};
+
+export function AccountDetails() {
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState<ProfileData>(getProfileData());
 
   const handleSave = () => {
     // Mock save functionality
-    console.log("Saving profile data:", formData)
-    setIsEditing(false)
-  }
+    console.log("Saving profile data:", formData);
+    setIsEditing(false);
+  };
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-  }
+  const handleInputChange = (field: keyof ProfileData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
   return (
     <div className="space-y-6">
@@ -45,8 +68,11 @@ export function AccountDetails() {
           <div className="flex items-center space-x-6">
             <div className="relative">
               <Avatar className="h-24 w-24">
-                <AvatarImage src="/diverse-user-avatars.png" />
-                <AvatarFallback className="text-lg">ИП</AvatarFallback>
+                <AvatarImage src={formData.avatarUrl} />
+                <AvatarFallback className="text-lg">
+                  {formData.firstName[0]}
+                  {formData.lastName[0]}
+                </AvatarFallback>
               </Avatar>
               <Button
                 size="icon"
@@ -62,8 +88,11 @@ export function AccountDetails() {
               </h3>
               <p className="text-muted-foreground">{formData.email}</p>
               <div className="flex space-x-2">
-                <Badge variant="default">Pro Plan</Badge>
-                <Badge variant="secondary">Верифицирован</Badge>
+                {formData.badges.map((badge, index) => (
+                  <Badge key={index} variant={badge.variant}>
+                    {badge.label}
+                  </Badge>
+                ))}
               </div>
             </div>
           </div>
@@ -160,5 +189,5 @@ export function AccountDetails() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
