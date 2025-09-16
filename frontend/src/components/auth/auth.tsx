@@ -12,8 +12,8 @@ import {
 import {Separator} from "@/components/ui/separator"
 
 // components
-import {LogoAndBrandComponent} from "@/components/utils/logo_brand_component.tsx";
-import {TermsAndPrivacy} from "@/components/utils/TermsAndConditions.tsx";
+import {LogoAndBrandComponent} from "@/components/utils_for_components/logo_brand_component.tsx";
+import {TermsAndPrivacy} from "@/components/utils_for_components/TermsAndConditions.tsx";
 
 // icons
 import AppleLogo from "../../utils/icons/AppleLogo.png"

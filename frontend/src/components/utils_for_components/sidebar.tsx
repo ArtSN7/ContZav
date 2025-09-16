@@ -3,7 +3,7 @@ import {LayoutDashboard, PlusCircle, BarChart3, User} from "lucide-react"
 import {cn} from "@/lib/utils.ts"
 import {useNavigate, useLocation} from "react-router-dom"
 import {CONTENT_CREATE_ROUTE, DASHBOARD_ROUTE, ANALYTICS_ROUTE, PROFILE_ROUTE} from "@/utils/CONSTANTS.ts"
-import {LogoAndBrandComponent} from "@/components/utils/logo_brand_component.tsx"
+import {LogoAndBrandComponent} from "@/components/utils_for_components/logo_brand_component.tsx"
 
 
 const navigation = [

@@ -1,10 +1,10 @@
 import { DashboardLayout } from "@/components/utils_for_components/dashboard_layout.tsx"
-import { DashboardContent } from "./comps/main.tsx"
+import { UserProfile } from "./comps/user_profile"
 
-export default function DashboardPage() {
+export default function ProfilePage() {
   return (
     <DashboardLayout>
-      <DashboardContent />
+      <UserProfile />
     </DashboardLayout>
   )
 }
