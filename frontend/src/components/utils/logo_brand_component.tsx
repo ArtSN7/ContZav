@@ -8,7 +8,6 @@ export function LogoAndBrandComponent() {
                 </div>
                 <h1 className="text-2xl font-bold text-foreground">Контент Завод</h1>
             </div>
-            <p className="text-muted-foreground">Автоматизация создания контента для социальных сетей</p>
         </div>
     )
 }
