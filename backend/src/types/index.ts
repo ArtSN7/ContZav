@@ -1,3 +1,5 @@
+export * from './analytics.js';
+
 export interface AuthUser {
     id: string;
     email: string;
@@ -25,6 +27,21 @@ export interface SocialAccount {
     followers: number;
     last_sync: Date;
     is_connected: boolean;
+    created_at: Date;
+    updated_at: Date;
+}
+
+export interface ContentData {
+    id: string;
+    user_id: string;
+    title: string;
+    content: string;
+    content_type: 'video' | 'text' | 'combination';
+    platform: 'youtube' | 'instagram' | 'vk' | 'telegram' | 'facebook' | 'tiktok';
+    status: 'draft' | 'published' | 'scheduled';
+    scheduled_date?: Date;
+    published_date?: Date;
+    metrics?: any;
     created_at: Date;
     updated_at: Date;
 }

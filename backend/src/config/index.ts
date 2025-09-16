@@ -8,6 +8,7 @@ const envSchema = z.object({
     PORT: z.string().default('3000'),
     SUPABASE_URL: z.string().url(),
     SUPABASE_ANON_KEY: z.string(),
+    SUPABASE_SERVICE_KEY: z.string(),
     GOOGLE_CLIENT_ID: z.string(),
     GOOGLE_CLIENT_SECRET: z.string(),
     VK_CLIENT_ID: z.string(),
