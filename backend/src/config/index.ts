@@ -7,6 +7,7 @@ const envSchema = z.object({
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
     PORT: z.string().transform(Number).default(5001),
     FRONTEND_URL: z.string().url().default('http://localhost:3000'),
+    BACKEND_URL: z.string().url().default('http://localhost:5001'),
 
     SUPABASE_URL: z.string().url(),
     SUPABASE_ANON_KEY: z.string(),

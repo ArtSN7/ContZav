@@ -1,28 +1,43 @@
 import axios from 'axios';
 import { config } from '../config/index.js';
 import { OAuthToken, OAuthProfile } from '../types/index.js';
+import { logger } from '@/utils/logger.js';
 
 export class OAuthService {
     static async exchangeGoogleCode(code: string): Promise<{ tokens: OAuthToken; profile: OAuthProfile }> {
-        const tokenResponse = await axios.post('https://oauth2.googleapis.com/token', {
-            client_id: config.GOOGLE_CLIENT_ID,
-            client_secret: config.GOOGLE_CLIENT_SECRET,
-            code,
-            redirect_uri: `${config.FRONTEND_URL}/api/auth/google/callback`,
-            grant_type: 'authorization_code',
-        });
+        try {
+            const redirectUri = `${config.BACKEND_URL}/api/auth/google/callback`;
 
-        const tokens = tokenResponse.data;
+            logger.info(`Exchanging Google code with redirect_uri: ${redirectUri}`);
 
-        const profileResponse = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
-            headers: { Authorization: `Bearer ${tokens.access_token}` },
-        });
+            const tokenResponse = await axios.post('https://oauth2.googleapis.com/token', {
+                client_id: config.GOOGLE_CLIENT_ID,
+                client_secret: config.GOOGLE_CLIENT_SECRET,
+                code,
+                redirect_uri: redirectUri,
+                grant_type: 'authorization_code',
+            });
 
-        return {
-            tokens,
-            profile: profileResponse.data,
-        };
+            const tokens = tokenResponse.data;
+
+            logger.info('Google token response:', tokens);
+
+            const profileResponse = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
+                headers: { Authorization: `Bearer ${tokens.access_token}` },
+            });
+
+            logger.info('Google profile response:', profileResponse.data);
+
+            return {
+                tokens,
+                profile: profileResponse.data,
+            };
+        } catch (error: any) {
+            logger.error('Google OAuth exchange error:', error.response?.data || error.message);
+            throw error;
+        }
     }
+
 
     static async exchangeVKCode(code: string): Promise<{ tokens: OAuthToken; profile: OAuthProfile }> {
         const tokenResponse = await axios.get('https://oauth.vk.com/access_token', {

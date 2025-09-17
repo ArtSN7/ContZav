@@ -10,7 +10,8 @@ const router = Router();
 router.post('/register', authLimiter, validate(registerSchema), AuthController.register);
 router.post('/login', authLimiter, validate(loginSchema), AuthController.login);
 router.post('/logout', authenticateToken, AuthController.logout);
-router.get('/profile', authenticateToken, AuthController.getProfile);
+router.get('/profile', AuthController.getProfileMock);
+// router.get('/profile', authenticateToken, AuthController.getProfile); !! testing
 router.post('/refresh', AuthController.refreshToken);
 
 router.get('/google', AuthController.googleAuth);

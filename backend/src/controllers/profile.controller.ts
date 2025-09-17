@@ -1,13 +1,19 @@
 import { Request, Response } from 'express';
 import { ProfileService } from '../services/profile.service.js';
-import { UpdateProfileDto, ChangePasswordDto, EnableTwoFactorDto, VerifyTwoFactorDto } from '../dtos/profile.dto.js';
+import { UpdateProfileDto, ChangePasswordDto, EnableTwoFactorDto } from '../dtos/profile.dto.js';
+import { UserModel } from '../models/User.js';
 
 export class ProfileController {
     static async getProfile(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
-            const profile = await ProfileService.getProfile(userId);
-            res.json(profile);
+            const user = await UserModel.findById(userId);
+            const socialAccounts = await UserModel.getSocialAccounts(userId);
+
+            res.json({
+                success: true,
+                data: { user, socialAccounts },
+            });
         } catch (error) {
             res.status(500).json({ error: 'Failed to fetch profile' });
         }
@@ -17,8 +23,14 @@ export class ProfileController {
         try {
             const userId = req.user!.id;
             const profileData: UpdateProfileDto = req.body;
-            const updatedProfile = await ProfileService.updateProfile(userId, profileData);
-            res.json(updatedProfile);
+
+            const updatedUser = await UserModel.updateProfile(userId, profileData);
+
+            res.json({
+                success: true,
+                data: updatedUser,
+                message: 'Profile updated successfully',
+            });
         } catch (error) {
             res.status(500).json({ error: 'Failed to update profile' });
         }
