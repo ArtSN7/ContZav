@@ -1,56 +1,114 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { Separator } from "@/components/ui/separator"
-import { Crown, Calendar, CreditCard, Download, AlertTriangle } from "lucide-react"
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import {
+  Crown,
+  Calendar,
+  CreditCard,
+  Download,
+  AlertTriangle,
+} from "lucide-react";
+import { getAuthToken } from "@/utils/auth";
+
+interface SubscriptionData {
+  plan: string;
+  price: number;
+  billingCycle: string;
+  nextBilling: string;
+  status: string;
+  usage: {
+    videosUsed: number;
+    videosLimit: number;
+    networksUsed: number;
+    networksLimit: number;
+  };
+  billingHistory: Array<{
+    date: string;
+    amount: number;
+    status: string;
+    invoice: string;
+  }>;
+}
 
 export function SubscriptionManagement() {
-  const [currentPlan] = useState({
-    name: "Pro",
-    price: 5990,
-    billingCycle: "monthly",
-    nextBilling: "15 января 2025",
-    status: "active",
-  })
+  const [subscriptionData, setSubscriptionData] =
+    useState<SubscriptionData | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const [usage] = useState({
-    videosUsed: 32,
-    videosLimit: 50,
-    networksUsed: 5,
-    networksLimit: 10,
-  })
+  useEffect(() => {
+    fetchSubscriptionData();
+  }, []);
+
+  const fetchSubscriptionData = async () => {
+    try {
+      const token = getAuthToken();
+      const response = await fetch("http://localhost:5090/api/auth/profile", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch subscription data");
+
+      const data = await response.json();
+      if (data.success) {
+        setSubscriptionData(data.data.subscription);
+      }
+    } catch (error) {
+      console.error("Error fetching subscription:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) return <div>Loading...</div>;
+  if (!subscriptionData) return <div>Error loading subscription data</div>;
 
   return (
     <div className="space-y-6">
-      {/* Current Plan */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Crown className="h-5 w-5 text-accent" />
             <span>Текущий тариф</span>
           </CardTitle>
-          <CardDescription>Информация о вашей подписке и использовании</CardDescription>
+          <CardDescription>
+            Информация о вашей подписке и использовании
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <h3 className="text-2xl font-bold">{currentPlan.name} Plan</h3>
+              <h3 className="text-2xl font-bold">
+                {subscriptionData.plan} Plan
+              </h3>
               <p className="text-muted-foreground">
-                {currentPlan.price.toLocaleString()} ₽/{currentPlan.billingCycle === "monthly" ? "месяц" : "год"}
+                {subscriptionData.price.toLocaleString()} ₽/
+                {subscriptionData.billingCycle === "monthly" ? "месяц" : "год"}
               </p>
             </div>
-            <Badge variant={currentPlan.status === "active" ? "default" : "destructive"}>
-              {currentPlan.status === "active" ? "Активна" : "Неактивна"}
+            <Badge
+              variant={
+                subscriptionData.status === "active" ? "default" : "destructive"
+              }
+            >
+              {subscriptionData.status === "active" ? "Активна" : "Неактивна"}
             </Badge>
           </div>
 
           <Separator />
 
-          {/* Usage Statistics */}
           <div className="space-y-4">
             <h4 className="font-semibold">Использование за месяц</h4>
 
@@ -59,33 +117,48 @@ export function SubscriptionManagement() {
                 <div className="flex justify-between text-sm">
                   <span>Видео/посты</span>
                   <span>
-                    {usage.videosUsed} из {usage.videosLimit}
+                    {subscriptionData.usage.videosUsed} из{" "}
+                    {subscriptionData.usage.videosLimit}
                   </span>
                 </div>
-                <Progress value={(usage.videosUsed / usage.videosLimit) * 100} className="h-2" />
+                <Progress
+                  value={
+                    (subscriptionData.usage.videosUsed /
+                      subscriptionData.usage.videosLimit) *
+                    100
+                  }
+                  className="h-2"
+                />
               </div>
 
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>Социальные сети</span>
                   <span>
-                    {usage.networksUsed} из {usage.networksLimit}
+                    {subscriptionData.usage.networksUsed} из{" "}
+                    {subscriptionData.usage.networksLimit}
                   </span>
                 </div>
-                <Progress value={(usage.networksUsed / usage.networksLimit) * 100} className="h-2" />
+                <Progress
+                  value={
+                    (subscriptionData.usage.networksUsed /
+                      subscriptionData.usage.networksLimit) *
+                    100
+                  }
+                  className="h-2"
+                />
               </div>
             </div>
           </div>
 
           <Separator />
 
-          {/* Billing Info */}
           <div className="space-y-3">
             <h4 className="font-semibold">Информация о платежах</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div className="flex items-center space-x-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span>Следующий платеж: {currentPlan.nextBilling}</span>
+                <span>Следующий платеж: {subscriptionData.nextBilling}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <CreditCard className="h-4 w-4 text-muted-foreground" />
@@ -96,54 +169,74 @@ export function SubscriptionManagement() {
         </CardContent>
       </Card>
 
-      {/* Plan Management */}
       <Card>
         <CardHeader>
           <CardTitle>Управление подпиской</CardTitle>
-          <CardDescription>Измените тариф или управляйте платежами</CardDescription>
+          <CardDescription>
+            Измените тариф или управляйте платежами
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button variant="outline" className="h-auto p-4 flex flex-col space-y-2 bg-transparent">
+            <Button
+              variant="outline"
+              className="h-auto p-4 flex flex-col space-y-2 bg-transparent"
+            >
               <Crown className="h-6 w-6" />
               <span className="font-medium">Изменить тариф</span>
-              <span className="text-xs text-muted-foreground">Повысить или понизить</span>
+              <span className="text-xs text-muted-foreground">
+                Повысить или понизить
+              </span>
             </Button>
 
-            <Button variant="outline" className="h-auto p-4 flex flex-col space-y-2 bg-transparent">
+            <Button
+              variant="outline"
+              className="h-auto p-4 flex flex-col space-y-2 bg-transparent"
+            >
               <CreditCard className="h-6 w-6" />
               <span className="font-medium">Способ оплаты</span>
-              <span className="text-xs text-muted-foreground">Изменить карту</span>
+              <span className="text-xs text-muted-foreground">
+                Изменить карту
+              </span>
             </Button>
 
-            <Button variant="outline" className="h-auto p-4 flex flex-col space-y-2 bg-transparent">
+            <Button
+              variant="outline"
+              className="h-auto p-4 flex flex-col space-y-2 bg-transparent"
+            >
               <Download className="h-6 w-6" />
               <span className="font-medium">Счета</span>
-              <span className="text-xs text-muted-foreground">Скачать документы</span>
+              <span className="text-xs text-muted-foreground">
+                Скачать документы
+              </span>
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Billing History */}
       <Card>
         <CardHeader>
           <CardTitle>История платежей</CardTitle>
-          <CardDescription>Последние транзакции по вашему аккаунту</CardDescription>
+          <CardDescription>
+            Последние транзакции по вашему аккаунту
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {[
-              { date: "15.12.2024", amount: 5990, status: "paid", invoice: "INV-001234" },
-              { date: "15.11.2024", amount: 5990, status: "paid", invoice: "INV-001233" },
-              { date: "15.10.2024", amount: 5990, status: "paid", invoice: "INV-001232" },
-            ].map((payment, index) => (
-              <div key={index} className="flex items-center justify-between p-3 border border-border rounded-lg">
+            {subscriptionData.billingHistory.map((payment, index) => (
+              <div
+                key={index}
+                className="flex items-center justify-between p-3 border border-border rounded-lg"
+              >
                 <div className="flex items-center space-x-3">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                   <div>
-                    <p className="text-sm font-medium">{payment.amount.toLocaleString()} ₽</p>
-                    <p className="text-xs text-muted-foreground">{payment.date}</p>
+                    <p className="text-sm font-medium">
+                      {payment.amount.toLocaleString()} ₽
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {payment.date}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -158,25 +251,28 @@ export function SubscriptionManagement() {
         </CardContent>
       </Card>
 
-      {/* Danger Zone */}
       <Card className="border-destructive">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2 text-destructive">
             <AlertTriangle className="h-5 w-5" />
             <span>Опасная зона</span>
           </CardTitle>
-          <CardDescription>Необратимые действия с вашей подпиской</CardDescription>
+          <CardDescription>
+            Необратимые действия с вашей подпиской
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between p-4 border border-destructive/20 rounded-lg">
             <div>
               <h4 className="font-medium">Отменить подписку</h4>
-              <p className="text-sm text-muted-foreground">Подписка будет отменена в конце текущего периода</p>
+              <p className="text-sm text-muted-foreground">
+                Подписка будет отменена в конце текущего периода
+              </p>
             </div>
             <Button variant="destructive">Отменить</Button>
           </div>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

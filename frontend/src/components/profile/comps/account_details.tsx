@@ -1,17 +1,22 @@
-"use client"
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Camera, Save, User } from "lucide-react";
+import { getAuthToken } from "@/utils/auth";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Camera, Save, User } from "lucide-react"
-
-// Интерфейс для типизации данных профиля
 interface ProfileData {
+  id: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -19,59 +24,115 @@ interface ProfileData {
   company: string;
   bio: string;
   website: string;
-  avatarUrl?: string;
+  avatar_url?: string;
   badges: { variant: "default" | "secondary"; label: string }[];
 }
 
-// Функция для получения данных профиля (пока с мок-данными)
-const getProfileData = (): ProfileData => {
-  return {
-    firstName: "Иван",
-    lastName: "Петров",
-    email: "ivan@example.com",
-    phone: "+7 (999) 123-45-67",
-    company: "ООО 'СтройМатериалы'",
-    bio: "Эксперт в области строительных материалов с 10-летним опытом работы в отрасли.",
-    website: "https://stroymaterials.ru",
-    avatarUrl: "https://api.dicebear.com/9.x/adventurer/svg?seed=Amaya",
-    badges: [
-      { variant: "default", label: "Pro Plan" },
-      { variant: "secondary", label: "Верифицирован" },
-    ],
-  };
-};
-
 export function AccountDetails() {
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState<ProfileData>(getProfileData());
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const handleSave = () => {
-    // Mock save functionality
-    console.log("Saving profile data:", formData);
-    setIsEditing(false);
+  useEffect(() => {
+    fetchProfileData();
+  }, []);
+
+  const fetchProfileData = async () => {
+    try {
+      const token = getAuthToken();
+      const response = await fetch("http://localhost:5090/api/auth/profile", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch profile");
+
+      const data = await response.json();
+      if (data.success) {
+        setProfileData(transformBackendToFrontend(data.data.user));
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const transformBackendToFrontend = (backendUser: any): ProfileData => ({
+    id: backendUser.id,
+    firstName: backendUser.name?.split(" ")[0] || "",
+    lastName: backendUser.name?.split(" ")[1] || "",
+    email: backendUser.email,
+    phone: backendUser.phone || "",
+    company: backendUser.company || "",
+    bio: backendUser.bio || "",
+    website: backendUser.website || "",
+    avatar_url: backendUser.avatar_url,
+    badges: [
+      { variant: "default" as const, label: "Pro Plan" },
+      { variant: "secondary" as const, label: "Верифицирован" },
+    ],
+  });
+
+  const transformFrontendToBackend = (frontendData: ProfileData) => ({
+    name: `${frontendData.firstName} ${frontendData.lastName}`.trim(),
+    email: frontendData.email,
+    phone: frontendData.phone,
+    company: frontendData.company,
+    bio: frontendData.bio,
+    website: frontendData.website,
+  });
+
+  const handleSave = async () => {
+    if (!profileData) return;
+
+    try {
+      const token = getAuthToken();
+      const backendData = transformFrontendToBackend(profileData);
+
+      const response = await fetch("http://localhost:5090/api/profile", {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(backendData),
+      });
+
+      if (!response.ok) throw new Error("Failed to update profile");
+
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+    }
   };
 
   const handleInputChange = (field: keyof ProfileData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setProfileData((prev) => (prev ? { ...prev, [field]: value } : null));
   };
+
+  if (loading) return <div>Loading...</div>;
+  if (!profileData) return <div>Error loading profile</div>;
 
   return (
     <div className="space-y-6">
-      {/* Profile Header */}
       <Card>
         <CardHeader>
           <CardTitle>Основная информация</CardTitle>
-          <CardDescription>Управляйте своими личными данными и настройками профиля</CardDescription>
+          <CardDescription>
+            Управляйте своими личными данными и настройками профиля
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Avatar Section */}
           <div className="flex items-center space-x-6">
             <div className="relative">
               <Avatar className="h-24 w-24">
-                <AvatarImage src={formData.avatarUrl} />
+                <AvatarImage src={profileData.avatar_url} />
                 <AvatarFallback className="text-lg">
-                  {formData.firstName[0]}
-                  {formData.lastName[0]}
+                  {profileData.firstName[0]}
+                  {profileData.lastName[0]}
                 </AvatarFallback>
               </Avatar>
               <Button
@@ -84,11 +145,11 @@ export function AccountDetails() {
             </div>
             <div className="space-y-2">
               <h3 className="text-xl font-semibold">
-                {formData.firstName} {formData.lastName}
+                {profileData.firstName} {profileData.lastName}
               </h3>
-              <p className="text-muted-foreground">{formData.email}</p>
+              <p className="text-muted-foreground">{profileData.email}</p>
               <div className="flex space-x-2">
-                {formData.badges.map((badge, index) => (
+                {profileData.badges.map((badge, index) => (
                   <Badge key={index} variant={badge.variant}>
                     {badge.label}
                   </Badge>
@@ -103,7 +164,7 @@ export function AccountDetails() {
               <Label htmlFor="firstName">Имя</Label>
               <Input
                 id="firstName"
-                value={formData.firstName}
+                value={profileData.firstName}
                 onChange={(e) => handleInputChange("firstName", e.target.value)}
                 disabled={!isEditing}
               />
@@ -112,7 +173,7 @@ export function AccountDetails() {
               <Label htmlFor="lastName">Фамилия</Label>
               <Input
                 id="lastName"
-                value={formData.lastName}
+                value={profileData.lastName}
                 onChange={(e) => handleInputChange("lastName", e.target.value)}
                 disabled={!isEditing}
               />
@@ -122,16 +183,16 @@ export function AccountDetails() {
               <Input
                 id="email"
                 type="email"
-                value={formData.email}
+                value={profileData.email}
                 onChange={(e) => handleInputChange("email", e.target.value)}
-                disabled={!isEditing}
+                disabled={true} // Email нельзя менять
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">Телефон</Label>
               <Input
                 id="phone"
-                value={formData.phone}
+                value={profileData.phone}
                 onChange={(e) => handleInputChange("phone", e.target.value)}
                 disabled={!isEditing}
               />
@@ -140,7 +201,7 @@ export function AccountDetails() {
               <Label htmlFor="company">Компания</Label>
               <Input
                 id="company"
-                value={formData.company}
+                value={profileData.company}
                 onChange={(e) => handleInputChange("company", e.target.value)}
                 disabled={!isEditing}
               />
@@ -149,7 +210,7 @@ export function AccountDetails() {
               <Label htmlFor="website">Веб-сайт</Label>
               <Input
                 id="website"
-                value={formData.website}
+                value={profileData.website}
                 onChange={(e) => handleInputChange("website", e.target.value)}
                 disabled={!isEditing}
               />
@@ -160,7 +221,7 @@ export function AccountDetails() {
             <Label htmlFor="bio">О себе</Label>
             <Textarea
               id="bio"
-              value={formData.bio}
+              value={profileData.bio}
               onChange={(e) => handleInputChange("bio", e.target.value)}
               disabled={!isEditing}
               className="min-h-[100px]"
