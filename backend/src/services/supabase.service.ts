@@ -3,14 +3,14 @@ import { config } from '../config/index.js';
 
 const supabaseUrl = config.SUPABASE_URL;
 const supabaseAnonKey = config.SUPABASE_ANON_KEY;
-const supabaseServiceKey = config.SUPABASE_SERVICE_KEY;
+// const supabaseServiceKey = config.SUPABASE_SERVICE_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
+if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error('Supabase URL and keys are required');
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+// export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
 export class SupabaseService {
     static async executeQuery<T>(query: string, params?: any[]): Promise<T[]> {
