@@ -1,10 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import { supabase } from '../services/supabase.service.js';
-import { UserModel } from '../models/User.model.js';
+import { UserModel } from '../models/User.js';
 import { OAuthService } from '../services/oauth.service.js';
 import { generateState, getGoogleAuthUrl, getVKAuthUrl, getAppleAuthUrl } from '../utils/oauth.utils.js';
 import { AppError } from '../exceptions/AppError.js';
 import { loginSchema, registerSchema, oauthCallbackSchema } from '../dtos/auth.dto.js';
+import { randomBytes } from 'crypto';
 
 export class AuthController {
     static async register(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -17,9 +18,10 @@ export class AuthController {
             });
 
             if (authError) throw new AppError(authError.message, 400);
+            if (!authData.user) throw new AppError('User creation failed', 500);
 
             const user = await UserModel.create({
-                id: authData.user!.id,
+                id: authData.user.id,
                 email: validatedData.email,
                 name: validatedData.name,
                 company: validatedData.company,
@@ -48,6 +50,7 @@ export class AuthController {
             });
 
             if (error) throw new AppError('Invalid credentials', 401);
+            if (!data.user || !data.session) throw new AppError('Login failed', 500);
 
             res.json({
                 success: true,
@@ -113,15 +116,17 @@ export class AuthController {
             let isNewUser = false;
 
             if (!user) {
+                const password = randomBytes(32).toString('hex');
                 const { data: authData, error: authError } = await supabase.auth.signUp({
                     email: profile.email,
-                    password: randomBytes(32).toString('hex'),
+                    password: password,
                 });
 
                 if (authError) throw new AppError(authError.message, 400);
+                if (!authData.user) throw new AppError('User creation failed', 500);
 
                 user = await UserModel.create({
-                    id: authData.user!.id,
+                    id: authData.user.id,
                     email: profile.email,
                     name: profile.name,
                     avatar_url: profile.picture,
@@ -145,6 +150,8 @@ export class AuthController {
                 email: user.email,
                 password: '',
             });
+
+            if (!sessionData.session) throw new AppError('Session creation failed', 500);
 
             res.json({
                 success: true,
@@ -184,15 +191,17 @@ export class AuthController {
             let isNewUser = false;
 
             if (!user) {
+                const password = randomBytes(32).toString('hex');
                 const { data: authData, error: authError } = await supabase.auth.signUp({
                     email: profile.email,
-                    password: randomBytes(32).toString('hex'),
+                    password: password,
                 });
 
                 if (authError) throw new AppError(authError.message, 400);
+                if (!authData.user) throw new AppError('User creation failed', 500);
 
                 user = await UserModel.create({
-                    id: authData.user!.id,
+                    id: authData.user.id,
                     email: profile.email,
                     name: profile.name,
                     avatar_url: profile.picture,
@@ -215,6 +224,8 @@ export class AuthController {
                 email: user.email,
                 password: '',
             });
+
+            if (!sessionData.session) throw new AppError('Session creation failed', 500);
 
             res.json({
                 success: true,
@@ -254,15 +265,17 @@ export class AuthController {
             let isNewUser = false;
 
             if (!user) {
+                const password = randomBytes(32).toString('hex');
                 const { data: authData, error: authError } = await supabase.auth.signUp({
                     email: profile.email,
-                    password: randomBytes(32).toString('hex'),
+                    password: password,
                 });
 
                 if (authError) throw new AppError(authError.message, 400);
+                if (!authData.user) throw new AppError('User creation failed', 500);
 
                 user = await UserModel.create({
-                    id: authData.user!.id,
+                    id: authData.user.id,
                     email: profile.email,
                     name: profile.name,
                 });
@@ -285,6 +298,8 @@ export class AuthController {
                 email: user.email,
                 password: '',
             });
+
+            if (!sessionData.session) throw new AppError('Session creation failed', 500);
 
             res.json({
                 success: true,
@@ -309,6 +324,7 @@ export class AuthController {
             });
 
             if (error) throw new AppError('Token refresh failed', 401);
+            if (!data.session) throw new AppError('Session refresh failed', 500);
 
             res.json({
                 success: true,
@@ -322,8 +338,4 @@ export class AuthController {
             next(error);
         }
     }
-}
-
-function randomBytes(arg0: number) {
-    throw new Error('Function not implemented.');
 }

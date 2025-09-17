@@ -1,9 +1,12 @@
-import { User as SupabaseUser } from '@supabase/supabase-js';
+import { Express } from 'express';
 
 declare global {
     namespace Express {
         interface Request {
-            user?: SupabaseUser;
+            user?: any;
+            session?: {
+                id: string;
+            };
         }
     }
 }

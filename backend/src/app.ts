@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import { trackSession } from "./middleware/session.middleware";
 import { config } from './config/index.js';
 import { appRoutes } from './routes/index.js';
 import { errorHandler } from './middleware/error.middleware.js';
@@ -10,6 +11,7 @@ import { logger } from './utils/logger.js';
 const app = express();
 
 app.use(helmet());
+app.use(trackSession);
 app.use(cors({
   origin: config.FRONTEND_URL,
   credentials: true,
