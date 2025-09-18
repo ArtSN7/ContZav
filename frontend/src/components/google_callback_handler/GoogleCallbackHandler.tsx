@@ -32,6 +32,7 @@ const GoogleCallbackHandler = () => {
           }
         }, 2000);
       } catch (err) {
+        console.error(err);
         navigate(AUTH_ROUTE, { state: { error: "Authentication failed" } });
       }
     };

@@ -3,42 +3,9 @@ import { UserModel } from '../models/User.js';
 import { OAuthService } from '../services/oauth.service.js';
 import { randomBytes } from 'crypto';
 import { AppError } from '../exceptions/AppError.js';
+import { TokenService } from './token.service.js';
 
 export class AuthService {
-    static async registerUser(validatedData: any) {
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-            email: validatedData.email,
-            password: validatedData.password,
-        });
-
-        if (authError) throw new AppError(authError.message, 400);
-        if (!authData.user) throw new AppError('User creation failed', 500);
-
-        const user = await UserModel.create({
-            id: authData.user.id,
-            email: validatedData.email,
-            name: validatedData.name,
-            company: validatedData.company,
-            expertise: validatedData.expertise,
-            phone: validatedData.phone,
-            website: validatedData.website,
-        });
-
-        return { user, session: authData.session };
-    }
-
-    static async loginUser(validatedData: any) {
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email: validatedData.email,
-            password: validatedData.password,
-        });
-
-        if (error) throw new AppError('Invalid credentials', 401);
-        if (!data.user || !data.session) throw new AppError('Login failed', 500);
-
-        return { user: data.user, session: data.session };
-    }
-
     static async handleOAuthCallback(platform: string, code: string) {
         let tokens: any;
         let profile: any;
@@ -79,6 +46,10 @@ export class AuthService {
             isNewUser = true;
         }
 
+        const expiresAt = tokens.expires_in ?
+            new Date(Date.now() + tokens.expires_in * 1000).toISOString() :
+            undefined;
+
         await UserModel.upsertSocialAccount({
             user_id: user.id,
             platform,
@@ -87,32 +58,31 @@ export class AuthService {
             username: profile.name,
             access_token: tokens.access_token,
             refresh_token: tokens.refresh_token,
-            expires_at: tokens.expires_in ? Date.now() + tokens.expires_in * 1000 : undefined,
+            expires_at: expiresAt,
             profile_data: profile,
         });
 
-        const { data: sessionData } = await supabase.auth.signInWithPassword({
-            email: user.email,
-            password: '',
-        });
+        const accessToken = TokenService.generateAccessToken(user.id, user.email);
+        const refreshToken = TokenService.generateRefreshToken(user.id);
 
-        if (!sessionData.session) throw new AppError('Session creation failed', 500);
-
-        return { user, session: sessionData.session, isNewUser };
+        return { user, accessToken, refreshToken, isNewUser };
     }
 
-    static async refreshToken(refresh_token: string) {
-        const { data, error } = await supabase.auth.refreshSession({
-            refresh_token,
-        });
+    static async refreshToken(refreshToken: string) {
+        try {
+            const { data, error } = await supabase.auth.refreshSession({
+                refresh_token: refreshToken
+            });
 
-        if (error) throw new AppError('Token refresh failed', 401);
-        if (!data.session) throw new AppError('Session refresh failed', 500);
+            if (error) throw new AppError('Invalid refresh token', 401);
+            if (!data.session) throw new AppError('Session refresh failed', 500);
 
-        return {
-            access_token: data.session.access_token,
-            refresh_token: data.session.refresh_token,
-            expires_at: data.session.expires_at,
-        };
+            const accessToken = TokenService.generateAccessToken(data.session.user.id, data.session.user.email);
+            const newRefreshToken = data.session.refresh_token;
+
+            return { accessToken, refreshToken: newRefreshToken };
+        } catch (error) {
+            throw new AppError('Invalid refresh token', 401);
+        }
     }
 }

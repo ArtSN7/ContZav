@@ -25,13 +25,22 @@ export class UserModel {
     }
 
     static async create(userData: Partial<AuthUser>): Promise<AuthUser> {
+        const completeUserData = {
+            ...userData,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+
         const { data, error } = await supabase
             .from('users')
-            .insert([userData])
+            .insert([completeUserData])
             .select()
             .single();
 
-        if (error) throw new Error('User creation failed');
+        if (error) {
+            console.error('User creation error:', error);
+            throw new Error('User creation failed: ' + error.message);
+        }
         return data as AuthUser;
     }
 
@@ -58,13 +67,42 @@ export class UserModel {
     }
 
     static async upsertSocialAccount(accountData: Partial<SocialAccount>): Promise<SocialAccount> {
-        const { data, error } = await supabase
+        const completeAccountData = {
+            ...accountData,
+            expires_at: accountData.expires_at ? new Date(accountData.expires_at).toISOString() : null,
+            updated_at: new Date().toISOString()
+        };
+
+        const existingAccount = await supabase
             .from('social_accounts')
-            .upsert([accountData])
-            .select()
+            .select('*')
+            .eq('user_id', accountData.user_id)
+            .eq('platform', accountData.platform)
             .single();
 
-        if (error) throw new Error('Social account upsert failed');
+        let data, error;
+
+        if (existingAccount.data) {
+            ({ data, error } = await supabase
+                .from('social_accounts')
+                .update(completeAccountData)
+                .eq('user_id', accountData.user_id)
+                .eq('platform', accountData.platform)
+                .select()
+                .single());
+        } else {
+            completeAccountData.created_at = new Date().toISOString();
+            ({ data, error } = await supabase
+                .from('social_accounts')
+                .insert([completeAccountData])
+                .select()
+                .single());
+        }
+
+        if (error) {
+            console.error('Social account upsert error:', error);
+            throw new Error('Social account upsert failed: ' + error.message);
+        }
         return data as SocialAccount;
     }
 

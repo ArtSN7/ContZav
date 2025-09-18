@@ -36,25 +36,3 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
         next(error);
     }
 };
-
-export const optionalAuth = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-        const authHeader = req.headers.authorization;
-
-        if (authHeader?.startsWith('Bearer ')) {
-            const token = authHeader.substring(7);
-
-            if (token) {
-                const { data: { user }, error } = await supabase.auth.getUser(token);
-
-                if (!error && user) {
-                    req.user = user;
-                }
-            }
-        }
-
-        next();
-    } catch (error) {
-        next();
-    }
-};

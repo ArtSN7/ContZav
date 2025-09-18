@@ -4,42 +4,12 @@ import { UserModel } from '../models/User.js';
 import { OAuthService } from '../services/oauth.service.js';
 import { generateState, getGoogleAuthUrl, getVKAuthUrl, getAppleAuthUrl } from '../utils/oauth.utils.js';
 import { AppError } from '../exceptions/AppError.js';
-import { loginSchema, registerSchema, oauthCallbackSchema } from '../dtos/auth.dto.js';
 import { randomBytes } from 'crypto';
 import { AuthService } from '@/services/auth.service.js';
 import { logger } from '@/utils/logger.js';
+import { config } from '@/config/index.js';
 
 export class AuthController {
-    static async register(req: Request, res: Response, next: NextFunction): Promise<void> {
-        try {
-            const validatedData = registerSchema.parse(req.body);
-            const result = await AuthService.registerUser(validatedData);
-
-            res.status(201).json({
-                success: true,
-                data: result,
-                message: 'User registered successfully',
-            });
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    static async login(req: Request, res: Response, next: NextFunction): Promise<void> {
-        try {
-            const validatedData = loginSchema.parse(req.body);
-            const result = await AuthService.loginUser(validatedData);
-
-            res.json({
-                success: true,
-                data: result,
-                message: 'Login successful',
-            });
-        } catch (error) {
-            next(error);
-        }
-    }
-
     static async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const { error } = await supabase.auth.signOut();
@@ -153,16 +123,18 @@ export class AuthController {
 
     static async googleCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const { code } = oauthCallbackSchema.parse(req.query);
+            const { code } = req.query;
             const result = await AuthService.handleOAuthCallback('google', code as string);
 
-            res.json({
-                success: true,
-                data: result,
-                message: 'Google authentication successful',
+            res.cookie('refreshToken', result.refreshToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax'
             });
+
+            res.redirect(`${config.FRONTEND_URL}/dashboard?auth=success&accessToken=${result.accessToken}`);
         } catch (error) {
-            next(error);
+            res.redirect(`${config.FRONTEND_URL}/auth?error=${encodeURIComponent(error.message)}`);
         }
     }
 
@@ -182,61 +154,18 @@ export class AuthController {
 
     static async vkCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const { code, state } = oauthCallbackSchema.parse(req.query);
+            const { code } = req.query;
+            const result = await AuthService.handleOAuthCallback('vk', code as string);
 
-            const { tokens, profile } = await OAuthService.exchangeVKCode(code as string);
-
-            let user = await UserModel.findByEmail(profile.email);
-            let isNewUser = false;
-
-            if (!user) {
-                const password = randomBytes(32).toString('hex');
-                const { data: authData, error: authError } = await supabase.auth.signUp({
-                    email: profile.email,
-                    password: password,
-                });
-
-                if (authError) throw new AppError(authError.message, 400);
-                if (!authData.user) throw new AppError('User creation failed', 500);
-
-                user = await UserModel.create({
-                    id: authData.user.id,
-                    email: profile.email,
-                    name: profile.name,
-                    avatar_url: profile.picture,
-                });
-                isNewUser = true;
-            }
-
-            await UserModel.upsertSocialAccount({
-                user_id: user.id,
-                platform: 'vkontakte',
-                platform_user_id: profile.id,
-                email: profile.email,
-                username: profile.name,
-                access_token: tokens.access_token,
-                expires_at: tokens.expires_in ? Date.now() + tokens.expires_in * 1000 : undefined,
-                profile_data: profile,
+            res.cookie('refreshToken', result.refreshToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax'
             });
 
-            const { data: sessionData } = await supabase.auth.signInWithPassword({
-                email: user.email,
-                password: '',
-            });
-
-            if (!sessionData.session) throw new AppError('Session creation failed', 500);
-
-            res.json({
-                success: true,
-                data: {
-                    user,
-                    session: sessionData.session,
-                    isNewUser,
-                },
-                message: 'VK authentication successful',
-            });
+            res.redirect(`${config.FRONTEND_URL}/dashboard?auth=success&accessToken=${result.accessToken}`);
         } catch (error) {
-            next(error);
+            res.redirect(`${config.FRONTEND_URL}/auth?error=${encodeURIComponent(error.message)}`);
         }
     }
 
@@ -256,82 +185,34 @@ export class AuthController {
 
     static async appleCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const { code, state } = req.body;
+            const { code } = req.body;
+            const result = await AuthService.handleOAuthCallback('apple', code);
 
-            const { tokens, profile } = await OAuthService.exchangeAppleCode(code);
-
-            let user = await UserModel.findByEmail(profile.email);
-            let isNewUser = false;
-
-            if (!user) {
-                const password = randomBytes(32).toString('hex');
-                const { data: authData, error: authError } = await supabase.auth.signUp({
-                    email: profile.email,
-                    password: password,
-                });
-
-                if (authError) throw new AppError(authError.message, 400);
-                if (!authData.user) throw new AppError('User creation failed', 500);
-
-                user = await UserModel.create({
-                    id: authData.user.id,
-                    email: profile.email,
-                    name: profile.name,
-                });
-                isNewUser = true;
-            }
-
-            await UserModel.upsertSocialAccount({
-                user_id: user.id,
-                platform: 'apple',
-                platform_user_id: profile.id,
-                email: profile.email,
-                username: profile.name,
-                access_token: tokens.access_token,
-                refresh_token: tokens.refresh_token,
-                expires_at: tokens.expires_in ? Date.now() + tokens.expires_in * 1000 : undefined,
-                profile_data: profile,
+            res.cookie('refreshToken', result.refreshToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax'
             });
 
-            const { data: sessionData } = await supabase.auth.signInWithPassword({
-                email: user.email,
-                password: '',
-            });
-
-            if (!sessionData.session) throw new AppError('Session creation failed', 500);
-
-            res.json({
-                success: true,
-                data: {
-                    user,
-                    session: sessionData.session,
-                    isNewUser,
-                },
-                message: 'Apple authentication successful',
-            });
+            res.redirect(`${config.FRONTEND_URL}/dashboard?auth=success&accessToken=${result.accessToken}`);
         } catch (error) {
-            next(error);
+            res.redirect(`${config.FRONTEND_URL}/auth?error=${encodeURIComponent(error.message)}`);
         }
     }
 
-    static async refreshToken(req: Request, res: Response, next: NextFunction): Promise<void> {
+    static async refreshToken(req: Request, res: Response, next: NextFunction): Promise<void> { // поправить
         try {
-            const { refresh_token } = req.body;
+            const { refreshToken } = req.cookies;
+            if (!refreshToken) throw new AppError('Refresh token required', 401);
 
-            const { data, error } = await supabase.auth.refreshSession({
-                refresh_token,
-            });
+            const result = await AuthService.refreshToken(refreshToken);
 
-            if (error) throw new AppError('Token refresh failed', 401);
-            if (!data.session) throw new AppError('Session refresh failed', 500);
+            res.cookie('accessToken', result.accessToken, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+            res.cookie('refreshToken', result.refreshToken, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
 
             res.json({
                 success: true,
-                data: {
-                    access_token: data.session.access_token,
-                    refresh_token: data.session.refresh_token,
-                    expires_at: data.session.expires_at,
-                },
+                message: 'Token refreshed successfully',
             });
         } catch (error) {
             next(error);

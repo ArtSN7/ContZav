@@ -2,16 +2,19 @@ export const getAuthToken = (): string | null => {
     return localStorage.getItem('auth_token');
 };
 
-export const setAuthTokens = (accessToken: string, refreshToken: string): void => {
+export const setAuthToken = (accessToken: string): void => {
     localStorage.setItem('auth_token', accessToken);
-    localStorage.setItem('refresh_token', refreshToken);
 };
 
-export const clearAuthTokens = (): void => {
+export const clearAuthToken = (): void => {
     localStorage.removeItem('auth_token');
-    localStorage.removeItem('refresh_token');
 };
 
 export const isAuthenticated = (): boolean => {
     return !!getAuthToken();
+};
+
+export const getAuthHeaders = (): HeadersInit => {
+    const token = getAuthToken();
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
 };

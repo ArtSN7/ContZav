@@ -19,33 +19,26 @@ import PlanningPage from "@/components/content/planning/main.tsx";
 import PricingPage from "@/components/content/pricing/main.tsx";
 import NichePage from "@/components/content/niche/main.tsx";
 import ScriptPage from "@/components/content/script_creation/main.tsx";
-import GoogleCallbackHandler from "./components/google_callback_handler/GoogleCallbackHandler.tsx";
+// import { AuthProvider } from "./contexts/AuthContext.tsx";
 
 function App() {
   return (
+    // <AuthProvider>
     <Router>
       <Routes>
-        <Route path={"/"} element={<AuthPage />} />, {/* вход */}
-        <Route path={AUTH_ROUTE} element={<AuthPage />} />, {/* вход */}
-        <Route
-          path="/api/auth/google/callback"
-          element={<GoogleCallbackHandler />}
-        />
-        <Route path={DASHBOARD_ROUTE} element={<DashboardPage />} />{" "}
-        {/* которая главная в sidebar */}
-        <Route path={ANALYTICS_ROUTE} element={<AnalyticsPage />} />{" "}
-        {/* которая аналитика в sidebar */}
-        <Route path={PROFILE_ROUTE} element={<ProfilePage />} />{" "}
-        {/* которая профиль в sidebar */}
-        <Route path={CONTENT_CREATE_ROUTE} element={<ContentPage />} />{" "}
-        {/* которая контент в sidebar */}
-        {/* страницы / tabs при создании контента */}
+        <Route path={"/"} element={<AuthPage />} />
+        <Route path={AUTH_ROUTE} element={<AuthPage />} />
+        <Route path={DASHBOARD_ROUTE} element={<DashboardPage />} />
+        <Route path={ANALYTICS_ROUTE} element={<AnalyticsPage />} />
+        <Route path={PROFILE_ROUTE} element={<ProfilePage />} />
+        <Route path={CONTENT_CREATE_ROUTE} element={<ContentPage />} />
         <Route path={CONTENT_ROUTE_PLANNING} element={<PlanningPage />} />
         <Route path={CONTENT_ROUTE_PRICING} element={<PricingPage />} />
         <Route path={CONTENT_ROUTE_NICHE} element={<NichePage />} />
         <Route path={CONTENT_ROUTE_SCRIPT} element={<ScriptPage />} />
       </Routes>
     </Router>
+    // {/* </AuthProvider> */}
   );
 }
 

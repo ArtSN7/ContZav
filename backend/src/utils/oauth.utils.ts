@@ -8,7 +8,7 @@ export const generateState = (): string => {
 export const getGoogleAuthUrl = (state: string): string => {
     const params = new URLSearchParams({
         client_id: config.GOOGLE_CLIENT_ID,
-        redirect_uri: `${config.FRONTEND_URL}/api/auth/google/callback`,
+        redirect_uri: `${config.BACKEND_URL}/api/auth/google/callback`,
         response_type: 'code',
         scope: 'openid email profile',
         state,
@@ -21,7 +21,7 @@ export const getGoogleAuthUrl = (state: string): string => {
 export const getVKAuthUrl = (state: string): string => {
     const params = new URLSearchParams({
         client_id: config.VK_CLIENT_ID,
-        redirect_uri: `${config.FRONTEND_URL}/api/auth/vk/callback`,
+        redirect_uri: `${config.BACKEND_URL}/api/auth/vk/callback`,
         response_type: 'code',
         scope: 'email',
         state,
@@ -33,7 +33,7 @@ export const getVKAuthUrl = (state: string): string => {
 export const getAppleAuthUrl = (state: string): string => {
     const params = new URLSearchParams({
         client_id: config.APPLE_CLIENT_ID,
-        redirect_uri: `${config.FRONTEND_URL}/api/auth/apple/callback`,
+        redirect_uri: `${config.BACKEND_URL}/api/auth/apple/callback`,
         response_type: 'code',
         scope: 'name email',
         state,
