@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { AIService } from '../services/ai.service.js';
-import { GenerateNicheDto, GenerateQuestionsDto, GenerateContentDto, ApproveContentDto, ScheduleContentDto } from '../dtos/ai.dto';
-import { AIContentModel } from '../models/AIContent';
+import { GenerateNicheDto, GenerateQuestionsDto, GenerateContentDto, ApproveContentDto, ScheduleContentDto } from '../dtos/ai.dto.js';
+import { AIContentModel } from '../models/AIContent.js';
 
 export class AIController {
     static async generateNicheQuestions(req: Request, res: Response) {
@@ -16,12 +16,36 @@ export class AIController {
         }
     }
 
+    static async generateNicheQuestionsMock(req: Request, res: Response) {
+        try {
+            const userId = "req.user!.id";
+            const dto = req.body;
+
+            const questions = await AIService.generateNicheQuestionsMock(userId, dto);
+            res.json({ questions });
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to generate niche questions' });
+        }
+    }
+
     static async generateContent(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
             const dto: GenerateContentDto = req.body;
 
             const content = await AIService.generateContentScript(userId, dto);
+            res.json(content);
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to generate content' });
+        }
+    }
+
+    static async generateContentMock(req: Request, res: Response) {
+        try {
+            const userId = req.user!.id;
+            const dto: GenerateContentDto = req.body;
+
+            const content = await AIService.generateContentScriptMock(userId, dto);
             res.json(content);
         } catch (error) {
             res.status(500).json({ error: 'Failed to generate content' });
@@ -68,10 +92,30 @@ export class AIController {
         }
     }
 
+    static async regenerateContentMock(req: Request, res: Response) {
+        try {
+            const { contentId } = req.params;
+            await AIService.regenerateContentMock(contentId);
+            res.json({ message: 'Content regeneration completed' });
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to regenerate content' });
+        }
+    }
+
     static async scheduleContent(req: Request, res: Response) {
         try {
             const dto: ScheduleContentDto = req.body;
             const content = await AIService.scheduleContent(dto.contentId, dto.platforms, new Date(dto.publishDate!));
+            res.json(content);
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to schedule content' });
+        }
+    }
+
+    static async scheduleContentMock(req: Request, res: Response) {
+        try {
+            const dto: ScheduleContentDto = req.body;
+            const content = await AIService.scheduleContentMock(dto.contentId, dto.platforms, new Date(dto.publishDate!));
             res.json(content);
         } catch (error) {
             res.status(500).json({ error: 'Failed to schedule content' });
