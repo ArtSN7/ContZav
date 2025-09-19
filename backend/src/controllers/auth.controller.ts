@@ -110,7 +110,7 @@ export class AuthController {
             logger.info(`Generated state for Google OAuth: ${state}`);
             const authUrl = getGoogleAuthUrl(state);
 
-            logger.info(`Generated Google auth URl: ${authUrl}`);
+            logger.info(`Generated Google auth URL: ${authUrl}`);
 
             res.json({
                 success: true,
@@ -123,17 +123,28 @@ export class AuthController {
 
     static async googleCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const { code } = req.query;
+            const { code, state, error: oauthError } = req.query;
+
+            if (oauthError) {
+                throw new AppError(`Google OAuth error: ${oauthError}`, 400);
+            }
+
+            if (!code) {
+                throw new AppError('Authorization code required', 400);
+            }
+
             const result = await AuthService.handleOAuthCallback('google', code as string);
 
             res.cookie('refreshToken', result.refreshToken, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax'
+                sameSite: 'lax',
+                maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
             });
 
             res.redirect(`${config.FRONTEND_URL}/dashboard?auth=success&accessToken=${result.accessToken}`);
-        } catch (error) {
+        } catch (error: any) {
+            logger.error('Google callback error:', error);
             res.redirect(`${config.FRONTEND_URL}/auth?error=${encodeURIComponent(error.message)}`);
         }
     }
@@ -154,17 +165,27 @@ export class AuthController {
 
     static async vkCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const { code } = req.query;
+            const { code, error: oauthError } = req.query;
+
+            if (oauthError) {
+                throw new AppError(`VK OAuth error: ${oauthError}`, 400);
+            }
+
+            if (!code) {
+                throw new AppError('Authorization code required', 400);
+            }
+
             const result = await AuthService.handleOAuthCallback('vk', code as string);
 
             res.cookie('refreshToken', result.refreshToken, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax'
+                sameSite: 'lax',
+                maxAge: 30 * 24 * 60 * 60 * 1000
             });
 
             res.redirect(`${config.FRONTEND_URL}/dashboard?auth=success&accessToken=${result.accessToken}`);
-        } catch (error) {
+        } catch (error: any) {
             res.redirect(`${config.FRONTEND_URL}/auth?error=${encodeURIComponent(error.message)}`);
         }
     }
@@ -185,33 +206,50 @@ export class AuthController {
 
     static async appleCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const { code } = req.body;
+            const { code, error: oauthError } = req.body;
+
+            if (oauthError) {
+                throw new AppError(`Apple OAuth error: ${oauthError}`, 400);
+            }
+
+            if (!code) {
+                throw new AppError('Authorization code required', 400);
+            }
+
             const result = await AuthService.handleOAuthCallback('apple', code);
 
             res.cookie('refreshToken', result.refreshToken, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax'
+                sameSite: 'lax',
+                maxAge: 30 * 24 * 60 * 60 * 1000
             });
 
             res.redirect(`${config.FRONTEND_URL}/dashboard?auth=success&accessToken=${result.accessToken}`);
-        } catch (error) {
+        } catch (error: any) {
             res.redirect(`${config.FRONTEND_URL}/auth?error=${encodeURIComponent(error.message)}`);
         }
     }
 
-    static async refreshToken(req: Request, res: Response, next: NextFunction): Promise<void> { // поправить
+    static async refreshToken(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const { refreshToken } = req.cookies;
             if (!refreshToken) throw new AppError('Refresh token required', 401);
 
             const result = await AuthService.refreshToken(refreshToken);
 
-            res.cookie('accessToken', result.accessToken, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
-            res.cookie('refreshToken', result.refreshToken, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+            res.cookie('refreshToken', result.refreshToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax',
+                maxAge: 30 * 24 * 60 * 60 * 1000
+            });
 
             res.json({
                 success: true,
+                data: {
+                    accessToken: result.accessToken
+                },
                 message: 'Token refreshed successfully',
             });
         } catch (error) {
