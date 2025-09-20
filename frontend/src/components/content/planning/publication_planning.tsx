@@ -13,7 +13,7 @@ import { CalendarIcon, ArrowRight, ArrowLeft, Clock } from "lucide-react"
 import { useNavigate} from "react-router";
 import { format } from "date-fns"
 import { ru } from "date-fns/locale"
-import {CONTENT_ROUTE_PRICING, CONTENT_ROUTE_SCRIPT} from "@/utils/CONSTANTS.ts";
+import {CONTENT_ROUTE_VIDEO_PREVIEW, DASHBOARD_ROUTE} from "@/utils/CONSTANTS.ts";
 
 const socialNetworks = [
   { id: "youtube", name: "YouTube", ready: true, icon: "🎥" },
@@ -49,7 +49,7 @@ export function PublicationPlanning() {
 
   const handleNext = () => {
     if (contentCount > 0 && selectedNetworks.length > 0) {
-      navigate(CONTENT_ROUTE_PRICING)
+      navigate(DASHBOARD_ROUTE)
     }
   }
 
@@ -231,7 +231,7 @@ export function PublicationPlanning() {
 
       {/* Navigation */}
       <div className="flex justify-between items-center pt-6">
-        <Button variant="outline" onClick={() => navigate(CONTENT_ROUTE_SCRIPT)}>
+        <Button variant="outline" onClick={() => navigate(CONTENT_ROUTE_VIDEO_PREVIEW)}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Назад
         </Button>

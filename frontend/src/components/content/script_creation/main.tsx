@@ -1,5 +1,5 @@
 import { DashboardLayout } from "@/components/utils_for_components/dashboard_layout";
-import { ScriptCreation } from "./script_creation";
+import { ScriptCreation } from "./comps/script_creation.tsx";
 import { ContentCreationProvider } from "@/contexts/ContentCreationContext";
 
 export default function ScriptPage() {

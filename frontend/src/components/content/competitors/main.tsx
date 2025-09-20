@@ -1,10 +1,10 @@
 import { DashboardLayout} from "@/components/utils_for_components/dashboard_layout.tsx";
-import { PricingLaunch } from "./pricing_launch";
+import { CompetitorsAnalysis } from "./comps/competitors_analysis"
 
-export default function PricingPage() {
+export default function CompetitorsPage() {
   return (
     <DashboardLayout>
-      <PricingLaunch />
+      <CompetitorsAnalysis />
     </DashboardLayout>
   )
 }

@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Sparkles, Plus, ArrowRight, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router";
-import { CONTENT_CREATE_ROUTE, CONTENT_ROUTE_SCRIPT } from "@/utils/CONSTANTS";
+import {CONTENT_CREATE_ROUTE, CONTENT_ROUTE_COMPETITORS} from "@/utils/CONSTANTS";
 import { useContentCreation } from "@/contexts/ContentCreationContext";
 
 export function NicheDefinition() {
@@ -35,9 +35,10 @@ export function NicheDefinition() {
   const navigate = useNavigate();
 
   const toggleQuestion = (question: string) => {
-    setSelectedQuestions((prev) =>
+    // @ts-ignore
+      setSelectedQuestions((prev) =>
       prev.includes(question)
-        ? prev.filter((q) => q !== question)
+        ? prev.filter((q: string) => q !== question)
         : [...prev, question]
     );
   };
@@ -51,7 +52,7 @@ export function NicheDefinition() {
 
   const handleNext = () => {
     if (selectedQuestions.length + customQuestions.length > 0) {
-      navigate(CONTENT_ROUTE_SCRIPT);
+      navigate(CONTENT_ROUTE_COMPETITORS);
     }
   };
 
