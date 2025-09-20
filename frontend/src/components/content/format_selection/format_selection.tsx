@@ -20,7 +20,7 @@ const formats = [
   {
     id: "text",
     title: "Text Posts",
-    description: "Посты для Telegram, VK и других",
+    description: "Посты для соц сетей",
     icon: FileText,
     example: "Информативные текстовые посты",
     color: "bg-blue-50 border-blue-200 hover:bg-blue-100",

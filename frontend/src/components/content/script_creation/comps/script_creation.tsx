@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { ThumbsUp, ThumbsDown, ArrowRight, ArrowLeft, Edit } from "lucide-react"
+import { ArrowRight, ArrowLeft, Edit } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-import {CONTENT_ROUTE_COMPETITORS, CONTENT_ROUTE_VIDEO_PREVIEW} from "@/utils/CONSTANTS.ts";
+import {CONTENT_ROUTE_AVATAR, CONTENT_ROUTE_COMPETITORS} from "@/utils/CONSTANTS.ts";
 
 const sampleScript = `🏠 Топ-5 ошибок при выборе стройматериалов
 
@@ -35,23 +35,10 @@ const sampleScript = `🏠 Топ-5 ошибок при выборе строй�
 export function ScriptCreation() {
   const [script, setScript] = useState(sampleScript)
   const [isEditing, setIsEditing] = useState(false)
-  const [feedback, setFeedback] = useState("")
-  const [showFeedback, setShowFeedback] = useState(false)
   const navigate = useNavigate()
 
   const handleApprove = () => {
-    navigate(CONTENT_ROUTE_VIDEO_PREVIEW) // Navigate to video page instead of planning
-  }
-
-  const handleReject = () => {
-    setShowFeedback(true)
-  }
-
-  const submitFeedback = () => {
-    // In real app, would send feedback to regenerate script
-    console.log("Feedback submitted:", feedback)
-    setShowFeedback(false)
-    setFeedback("")
+    navigate(CONTENT_ROUTE_AVATAR) // Navigate to video page instead of planning
   }
 
   return (
@@ -96,44 +83,7 @@ export function ScriptCreation() {
         </CardContent>
       </Card>
 
-      {/* Approval Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Утверждение сценария</CardTitle>
-          <CardDescription>Одобрите сценарий для создания видео или оставьте отзыв для улучшения</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {!showFeedback ? (
-            <div className="flex justify-center space-x-4">
-              <Button onClick={handleApprove} size="lg" className="bg-green-600 hover:bg-green-700">
-                <ThumbsUp className="mr-2 h-5 w-5" />
-                Утвердить
-              </Button>
-              <Button onClick={handleReject} variant="destructive" size="lg">
-                <ThumbsDown className="mr-2 h-5 w-5" />
-                Отклонить
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <Textarea
-                placeholder="Опишите, что нужно изменить в сценарии..."
-                value={feedback}
-                onChange={(e) => setFeedback(e.target.value)}
-                className="min-h-[100px]"
-              />
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setShowFeedback(false)}>
-                  Отмена
-                </Button>
-                <Button onClick={submitFeedback} disabled={!feedback.trim()}>
-                  Отправить отзыв
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+
 
       {/* Navigation */}
       <div className="flex justify-between items-center pt-6">

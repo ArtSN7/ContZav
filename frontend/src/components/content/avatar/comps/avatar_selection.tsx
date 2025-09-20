@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge.tsx"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar.tsx"
 import { ArrowRight, ArrowLeft, User } from "lucide-react"
 import { useNavigate } from "react-router-dom"
+import {CONTENT_ROUTE_SCRIPT, CONTENT_ROUTE_VIDEO_PREVIEW} from "@/utils/CONSTANTS.ts";
 
 const avatarOptions = [
   {
@@ -44,7 +45,7 @@ export function AvatarSelection() {
 
   const handleNext = () => {
     if (selectedAvatar) {
-      navigate("/dashboard/content/preview")
+      navigate(CONTENT_ROUTE_VIDEO_PREVIEW)
     }
   }
 
@@ -110,7 +111,7 @@ export function AvatarSelection() {
 
       {/* Navigation */}
       <div className="flex justify-between items-center pt-6">
-        <Button variant="outline" onClick={() => navigate("/dashboard/content/script")}>
+        <Button variant="outline" onClick={() => navigate(CONTENT_ROUTE_SCRIPT)}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Назад
         </Button>
