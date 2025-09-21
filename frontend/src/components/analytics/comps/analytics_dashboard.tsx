@@ -19,7 +19,10 @@ export function AnalyticsDashboard() {
         <div className="space-y-6">
             {/* Header */}
             <div className="flex flex-col space-y-2">
-                <h1 className="text-3xl font-bold text-foreground">Аналитика контента <span className="text-orange-500 text-2xl font-medium italic"> - в разработке</span></h1>
+
+                {/*<span className="text-orange-500 text-2xl font-medium italic"> - в разработке</span>*/}
+
+                <h1 className="text-3xl font-bold text-foreground">Аналитика контента</h1>
 
                 <p className="text-muted-foreground">Отслеживайте эффективность вашего контента в социальных сетях</p>
             </div>

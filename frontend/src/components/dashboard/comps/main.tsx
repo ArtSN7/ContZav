@@ -3,10 +3,9 @@ import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/compo
 import {Badge} from "@/components/ui/badge.tsx"
 import {PlusCircle, BarChart3, Eye, Heart, Share2, TrendingUp, Video, FileText, Calendar} from "lucide-react"
 
-import VKLogo from "../../../utils/icons/VKLogo.png"
 import YtLogo from "../../../utils/icons/YtLogo.png"
 import TgLogo from "../../../utils/icons/TgLogo.png"
-import InstaLogo from "../../../utils/icons/InstaLogo.png"
+import TikTokLogo from "../../../utils/icons/TikTokLogo.png"
 import {useNavigate} from "react-router";
 
 import {CONTENT_CREATE_ROUTE, ANALYTICS_ROUTE} from "@/utils/CONSTANTS.ts";
@@ -37,7 +36,7 @@ const getStats = () => {
         },
         {
             title: "Соцсети",
-            value: 4,
+            value: 3,
             description: "подключенных платформ",
             icon: Share2,
         },
@@ -47,8 +46,7 @@ const getStats = () => {
 const getPlatforms = () => {
     return [
         {name: "YouTube", icon: YtLogo},
-        {name: "Instagram", icon: InstaLogo},
-        {name: "ВКонтакте", icon: VKLogo},
+        {name: "TikTok", icon: TikTokLogo},
         {name: "Telegram", icon: TgLogo},
     ];
 };
@@ -58,21 +56,21 @@ const getRecentActivities = () => {
         {
             type: "video",
             title: "Топ-5 трендов в строительстве 2024",
-            platform: "YouTube, Instagram",
+            platform: "YouTube",
             time: "2 часа назад",
             status: "published",
         },
         {
             type: "post",
             title: "Как выбрать качественные стройматериалы",
-            platform: "VK, Telegram",
+            platform: "Telegram",
             time: "5 часов назад",
             status: "published",
         },
         {
             type: "video",
             title: "Обзор новых технологий в ремонте",
-            platform: "YouTube",
+            platform: "YouTube, TikTok",
             time: "1 день назад",
             status: "processing",
         },

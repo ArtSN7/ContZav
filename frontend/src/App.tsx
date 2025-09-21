@@ -7,7 +7,7 @@ import {
     CONTENT_CREATE_ROUTE,
     CONTENT_ROUTE_NICHE,
     CONTENT_ROUTE_PLANNING,
-    CONTENT_ROUTE_SCRIPT, CONTENT_ROUTE_AVATAR, CONTENT_ROUTE_COMPETITORS, CONTENT_ROUTE_VIDEO_PREVIEW,
+    CONTENT_ROUTE_SCRIPT, CONTENT_ROUTE_AVATAR, CONTENT_ROUTE_COMPETITORS, CONTENT_ROUTE_VIDEO_PREVIEW, SUCCESS_PAGE_ROUTE
 } from "./utils/CONSTANTS.ts";
 
 import {AuthPage} from "./components/auth/auth";
@@ -23,6 +23,7 @@ import ScriptPage from "@/components/content/script_creation/main.tsx";
 import AvatarPage from "@/components/content/avatar/main.tsx";
 import CompetitorsPage from "@/components/content/competitors/main.tsx";
 import VideoPreviewPage from "@/components/content/video_preview/main.tsx";
+import SuccessPage from "@/components/utils_for_components/success_window.tsx";
 
 // import { AuthProvider } from "./contexts/AuthContext.tsx";
 
@@ -43,6 +44,7 @@ function App() {
                 <Route path={CONTENT_ROUTE_AVATAR} element={<AvatarPage/>}/>
                 <Route path={CONTENT_ROUTE_COMPETITORS} element={<CompetitorsPage/>}/>
                 <Route path={CONTENT_ROUTE_VIDEO_PREVIEW} element={<VideoPreviewPage/>}/>
+                <Route path={SUCCESS_PAGE_ROUTE} element={<SuccessPage/>}/>
             </Routes>
         </Router>
         // {/* </AuthProvider> */}

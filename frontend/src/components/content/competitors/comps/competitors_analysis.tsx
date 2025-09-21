@@ -5,80 +5,55 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Plus, ArrowRight, ArrowLeft, Users, TrendingUp, Eye } from "lucide-react"
+import { Plus, ArrowRight, ArrowLeft, Users, ExternalLink, Check } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-import {CONTENT_ROUTE_COMPETITORS, CONTENT_ROUTE_SCRIPT} from "@/utils/CONSTANTS.ts";
+import {CONTENT_ROUTE_NICHE, CONTENT_ROUTE_SCRIPT} from "@/utils/CONSTANTS.ts";
 
 interface Competitor {
   id: string
   name: string
   platform: string
-  followers: string
-  engagement: string
-  avatar: string
-  description: string
-  strengths: string[]
+  url?: string
 }
 
 const suggestedCompetitors: Competitor[] = [
   {
     id: "1",
-    name: "СтройЭксперт",
+    name: "Маркетинговый рай",
     platform: "YouTube",
-    followers: "125K",
-    engagement: "4.2%",
-    avatar: "/placeholder.svg?height=40&width=40",
-    description: "Канал о строительстве и ремонте",
-    strengths: ["Качественный контент", "Регулярные выпуски", "Экспертность"],
+    url: "https://youtube.com/@stroyexpert",
   },
   {
     id: "2",
-    name: "Дом Мечты",
+    name: "M&S analysing",
     platform: "Instagram",
-    followers: "89K",
-    engagement: "6.8%",
-    avatar: "/placeholder.svg?height=40&width=40",
-    description: "Дизайн интерьера и стройматериалы",
-    strengths: ["Визуальный контент", "Высокий engagement", "Тренды"],
+    url: "https://instagram.com/dom_mechty",
   },
   {
     id: "3",
-    name: "Строй Советы",
+    name: "Плужа О Маркетинге",
     platform: "TikTok",
-    followers: "67K",
-    engagement: "8.1%",
-    avatar: "/placeholder.svg?height=40&width=40",
-    description: "Короткие советы по строительству",
-    strengths: ["Вирусный контент", "Молодая аудитория", "Креативность"],
+    url: "https://tiktok.com/@stroy_sovety",
   },
+
 ]
 
 export function CompetitorsAnalysis() {
   const [competitors, setCompetitors] = useState<Competitor[]>(suggestedCompetitors)
-  const [newCompetitor, setNewCompetitor] = useState({
-    name: "",
-    platform: "",
-    followers: "",
-  })
+  const [newCompetitorName, setNewCompetitorName] = useState("")
   const [selectedCompetitors, setSelectedCompetitors] = useState<string[]>([])
   const navigate = useNavigate()
 
   const addCustomCompetitor = () => {
-    if (newCompetitor.name && newCompetitor.platform) {
+    if (newCompetitorName.trim()) {
       const competitor: Competitor = {
         id: Date.now().toString(),
-        name: newCompetitor.name,
-        platform: newCompetitor.platform,
-        followers: newCompetitor.followers || "N/A",
-        engagement: "N/A",
-        avatar: "/placeholder.svg?height=40&width=40",
-        description: "Добавлен пользователем",
-        strengths: ["Пользовательский анализ"],
+        name: newCompetitorName.trim(),
+        platform: "Custom",
       }
 
       setCompetitors([...competitors, competitor])
-      setNewCompetitor({ name: "", platform: "", followers: "" })
+      setNewCompetitorName("")
     }
   }
 
@@ -91,109 +66,91 @@ export function CompetitorsAnalysis() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-8">
       {/* Header */}
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-bold text-foreground">Анализ конкурентов</h1>
-        <p className="text-muted-foreground">Изучите конкурентов в вашей нише для создания лучшего контента</p>
+        <p className="text-muted-foreground">Выберите конкурентов для анализа вашей ниши</p>
       </div>
 
-      {/* Suggested Competitors */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="w-5 h-5" />
             Рекомендуемые конкуренты
           </CardTitle>
-          <CardDescription>Мы нашли этих конкурентов в вашей нише на основе анализа</CardDescription>
+          <CardDescription>Выберите конкурентов из списка или добавьте своих</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="space-y-3">
             {competitors.map((competitor) => (
-              <Card
+              <div
                 key={competitor.id}
-                className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
-                  selectedCompetitors.includes(competitor.id) ? "ring-2 ring-primary bg-primary/5" : "hover:bg-muted/50"
+                className={`flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-all duration-200 hover:bg-muted/50 ${
+                  selectedCompetitors.includes(competitor.id) ? "bg-primary/5 border-primary" : "border-border"
                 }`}
                 onClick={() => toggleCompetitor(competitor.id)}
               >
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <Avatar className="w-12 h-12">
-                      <AvatarImage src={competitor.avatar || "/placeholder.svg"} />
-                      <AvatarFallback>{competitor.name[0]}</AvatarFallback>
-                    </Avatar>
-
-                    <div className="flex-1 space-y-2">
-                      <div>
-                        <h3 className="font-semibold text-sm">{competitor.name}</h3>
-                        <p className="text-xs text-muted-foreground">{competitor.description}</p>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="text-xs">
-                          {competitor.platform}
-                        </Badge>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div className="flex items-center gap-1">
-                          <Users className="w-3 h-3" />
-                          <span>{competitor.followers}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <TrendingUp className="w-3 h-3" />
-                          <span>{competitor.engagement}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap gap-1">
-                        {competitor.strengths.slice(0, 2).map((strength, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            {strength}
-                          </Badge>
-                        ))}
-                      </div>
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                      selectedCompetitors.includes(competitor.id)
+                        ? "bg-primary border-primary"
+                        : "border-muted-foreground"
+                    }`}
+                  >
+                    {selectedCompetitors.includes(competitor.id) && (
+                      <Check className="w-3 h-3 text-primary-foreground" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="font-medium">{competitor.name}</h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant="secondary" className="text-xs">
+                        {competitor.platform}
+                      </Badge>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+                {competitor.url && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      window.open(competitor.url, "_blank")
+                    }}
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
             ))}
           </div>
         </CardContent>
       </Card>
 
-      {/* Add Custom Competitor */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Plus className="w-5 h-5" />
             Добавить конкурента
           </CardTitle>
-          <CardDescription>Добавьте своих конкурентов для более полного анализа</CardDescription>
+          <CardDescription>Добавьте название канала конкурента</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="flex gap-3">
             <Input
-              placeholder="Название канала/аккаунта"
-              value={newCompetitor.name}
-              onChange={(e) => setNewCompetitor({ ...newCompetitor, name: e.target.value })}
+              placeholder="Название канала"
+              value={newCompetitorName}
+              onChange={(e) => setNewCompetitorName(e.target.value)}
+              onKeyPress={(e) => e.key === "Enter" && addCustomCompetitor()}
+              className="flex-1"
             />
-            <Input
-              placeholder="Платформа (YouTube, Instagram, TikTok)"
-              value={newCompetitor.platform}
-              onChange={(e) => setNewCompetitor({ ...newCompetitor, platform: e.target.value })}
-            />
-            <div className="flex gap-2">
-              <Input
-                placeholder="Подписчики (опционально)"
-                value={newCompetitor.followers}
-                onChange={(e) => setNewCompetitor({ ...newCompetitor, followers: e.target.value })}
-              />
-              <Button onClick={addCustomCompetitor} disabled={!newCompetitor.name || !newCompetitor.platform}>
-                <Plus className="w-4 h-4" />
-              </Button>
-            </div>
+            <Button onClick={addCustomCompetitor} disabled={!newCompetitorName.trim()}>
+              <Plus className="w-4 h-4 mr-2" />
+              Добавить
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -209,10 +166,6 @@ export function CompetitorsAnalysis() {
                   Эти данные будут использованы для создания уникального контента
                 </p>
               </div>
-              <div className="flex items-center gap-2">
-                <Eye className="w-4 h-4 text-primary" />
-                <span className="text-sm font-medium text-primary">Готово к анализу</span>
-              </div>
             </div>
           </CardContent>
         </Card>
@@ -220,7 +173,7 @@ export function CompetitorsAnalysis() {
 
       {/* Navigation */}
       <div className="flex justify-between items-center pt-6">
-        <Button variant="outline" onClick={() => navigate(CONTENT_ROUTE_COMPETITORS)}>
+        <Button variant="outline" onClick={() => navigate(CONTENT_ROUTE_NICHE)}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Назад
         </Button>

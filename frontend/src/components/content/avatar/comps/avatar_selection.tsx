@@ -9,33 +9,15 @@ import { ArrowRight, ArrowLeft, User } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import {CONTENT_ROUTE_SCRIPT, CONTENT_ROUTE_VIDEO_PREVIEW} from "@/utils/CONSTANTS.ts";
 
+import avatar from "./avatar.png"
+
 const avatarOptions = [
   {
     id: "1",
-    name: "Алексей",
+    name: "Основной Аватар",
     gender: "Мужской",
-    age: "30-35",
     style: "Деловой",
-    avatar: "/placeholder.svg?height=80&width=80",
-    voice: "Уверенный, профессиональный",
-  },
-  {
-    id: "2",
-    name: "Мария",
-    gender: "Женский",
-    age: "25-30",
-    style: "Дружелюбный",
-    avatar: "/placeholder.svg?height=80&width=80",
-    voice: "Теплый, располагающий",
-  },
-  {
-    id: "3",
-    name: "Дмитрий",
-    gender: "Мужской",
-    age: "35-40",
-    style: "Экспертный",
-    avatar: "/placeholder.svg?height=80&width=80",
-    voice: "Авторитетный, знающий",
+    avatar: avatar,
   },
 ]
 
@@ -79,19 +61,17 @@ export function AvatarSelection() {
                 <CardContent className="p-6">
                   <div className="flex items-center gap-6">
                     <Avatar className="w-20 h-20">
-                      <AvatarImage src={avatar.avatar || "/placeholder.svg"} />
+                      <AvatarImage src={avatar.avatar} className="w-full h-full object-cover"/>
                       <AvatarFallback className="text-lg">{avatar.name[0]}</AvatarFallback>
                     </Avatar>
 
                     <div className="flex-1 space-y-3">
                       <div>
                         <h3 className="text-xl font-semibold">{avatar.name}</h3>
-                        <p className="text-muted-foreground">{avatar.voice}</p>
                       </div>
 
                       <div className="flex flex-wrap gap-2">
                         <Badge variant="secondary">{avatar.gender}</Badge>
-                        <Badge variant="secondary">{avatar.age}</Badge>
                         <Badge variant="secondary">{avatar.style}</Badge>
                       </div>
                     </div>

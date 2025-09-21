@@ -1,18 +1,18 @@
-import { Request, Response, NextFunction } from 'express';
-import { supabase } from '../services/supabase.service.js';
-import { UserModel } from '../models/User.js';
-import { OAuthService } from '../services/oauth.service.js';
-import { generateState, getGoogleAuthUrl, getVKAuthUrl, getAppleAuthUrl } from '../utils/oauth.utils.js';
-import { AppError } from '../exceptions/AppError.js';
-import { randomBytes } from 'crypto';
-import { AuthService } from '@/services/auth.service.js';
-import { logger } from '@/utils/logger.js';
-import { config } from '@/config/index.js';
+import {Request, Response, NextFunction} from 'express';
+import {supabase} from '../services/supabase.service.js';
+import {UserModel} from '../models/User.js';
+import {OAuthService} from '../services/oauth.service.js';
+import {generateState, getGoogleAuthUrl, getVKAuthUrl, getAppleAuthUrl} from '../utils/oauth.utils.js';
+import {AppError} from '../exceptions/AppError.js';
+import {randomBytes} from 'crypto';
+import {AuthService} from '@/services/auth.service.js';
+import {logger} from '@/utils/logger.js';
+import {config} from '@/config/index.js';
 
 export class AuthController {
     static async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const { error } = await supabase.auth.signOut();
+            const {error} = await supabase.auth.signOut();
             if (error) throw new AppError('Logout failed', 500);
 
             res.json({
@@ -28,22 +28,31 @@ export class AuthController {
         try {
             const mockUser = {
                 id: "12345",
-                name: "Иван Петров",
-                email: "ivan.petrov@example.com",
+                name: "Артем Сорокин",
+                email: "artem.17sn@gmail.com",
                 phone: "+7 (999) 123-45-67",
-                company: "ООО 'ТехноЛогика'",
-                bio: "Full-stack разработчик с 5-летним опытом. Специализируюсь на React и Node.js",
-                website: "https://ivan-petrov-portfolio.ru",
                 avatar_url: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face"
             };
 
             const mockSocialAccounts = [
-                { provider: "youtube", connected: true, username: "@stroymaterials", followers: "12.5K", lastSync: "2 часа назад" },
-                { provider: "instagram", connected: true, username: "@stroymaterials_ru", followers: "8.9K", lastSync: "1 час назад" },
-                { provider: "vk", connected: true, username: "stroymaterials", followers: "15.2K", lastSync: "30 минут назад" },
-                { provider: "telegram", connected: true, username: "@stroymaterials_channel", followers: "3.4K", lastSync: "5 минут назад" },
-                { provider: "tiktok", connected: false, username: "", followers: "", lastSync: "" },
-                { provider: "facebook", connected: false, username: "", followers: "", lastSync: "" }
+                {
+                    provider: "youtube",
+                    connected: true,
+                    username: "@stroymaterials",
+                    followers: "12.5K",
+                    lastSync: "2 часа назад"
+                },
+                {provider: "instagram", connected: false, username: "@stroymaterials_ru", followers: "", lastSync: ""},
+                {provider: "vk", connected: false, username: "stroymaterials", followers: "", lastSync: ""},
+                {
+                    provider: "telegram",
+                    connected: true,
+                    username: "@stroymaterials_channel",
+                    followers: "3.4K",
+                    lastSync: "5 минут назад"
+                },
+                {provider: "tiktok", connected: true, username: "", followers: "8.9K", lastSync: "1 час назад"},
+                {provider: "facebook", connected: false, username: "", followers: "", lastSync: ""}
             ];
 
             const mockSubscription = {
@@ -59,18 +68,23 @@ export class AuthController {
                     networksLimit: 10
                 },
                 billingHistory: [
-                    { date: "15.12.2024", amount: 5990, status: "paid", invoice: "INV-001234" },
-                    { date: "15.11.2024", amount: 5990, status: "paid", invoice: "INV-001233" },
-                    { date: "15.10.2024", amount: 5990, status: "paid", invoice: "INV-001232" }
+                    {date: "15.12.2024", amount: 5990, status: "paid", invoice: "INV-001234"},
+                    {date: "15.11.2024", amount: 5990, status: "paid", invoice: "INV-001233"},
+                    {date: "15.10.2024", amount: 5990, status: "paid", invoice: "INV-001232"}
                 ]
             };
 
             const mockSecurity = {
                 twoFactorEnabled: true,
                 activeSessions: [
-                    { device: "MacBook Pro", location: "Москва, Россия", current: true, lastActive: "Сейчас" },
-                    { device: "iPhone 15", location: "Москва, Россия", current: false, lastActive: "2 часа назад" },
-                    { device: "Chrome на Windows", location: "Санкт-Петербург, Россия", current: false, lastActive: "1 день назад" }
+                    {device: "MacBook Pro", location: "Москва, Россия", current: true, lastActive: "Сейчас"},
+                    {device: "iPhone 15", location: "Москва, Россия", current: false, lastActive: "2 часа назад"},
+                    {
+                        device: "Chrome на Windows",
+                        location: "Санкт-Петербург, Россия",
+                        current: false,
+                        lastActive: "1 день назад"
+                    }
                 ]
             };
 
@@ -97,7 +111,7 @@ export class AuthController {
 
             res.json({
                 success: true,
-                data: { user, socialAccounts },
+                data: {user, socialAccounts},
             });
         } catch (error) {
             next(error);
@@ -114,7 +128,7 @@ export class AuthController {
 
             res.json({
                 success: true,
-                data: { authUrl, state },
+                data: {authUrl, state},
             });
         } catch (error) {
             next(error);
@@ -123,7 +137,7 @@ export class AuthController {
 
     static async googleCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const { code, state, error: oauthError } = req.query;
+            const {code, state, error: oauthError} = req.query;
 
             if (oauthError) {
                 throw new AppError(`Google OAuth error: ${oauthError}`, 400);
@@ -156,7 +170,7 @@ export class AuthController {
 
             res.json({
                 success: true,
-                data: { authUrl, state },
+                data: {authUrl, state},
             });
         } catch (error) {
             next(error);
@@ -165,7 +179,7 @@ export class AuthController {
 
     static async vkCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const { code, error: oauthError } = req.query;
+            const {code, error: oauthError} = req.query;
 
             if (oauthError) {
                 throw new AppError(`VK OAuth error: ${oauthError}`, 400);
@@ -197,7 +211,7 @@ export class AuthController {
 
             res.json({
                 success: true,
-                data: { authUrl, state },
+                data: {authUrl, state},
             });
         } catch (error) {
             next(error);
@@ -206,7 +220,7 @@ export class AuthController {
 
     static async appleCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const { code, error: oauthError } = req.body;
+            const {code, error: oauthError} = req.body;
 
             if (oauthError) {
                 throw new AppError(`Apple OAuth error: ${oauthError}`, 400);
@@ -233,7 +247,7 @@ export class AuthController {
 
     static async refreshToken(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const { refreshToken } = req.cookies;
+            const {refreshToken} = req.cookies;
             if (!refreshToken) throw new AppError('Refresh token required', 401);
 
             const result = await AuthService.refreshToken(refreshToken);

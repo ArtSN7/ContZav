@@ -54,7 +54,7 @@ export function AuthPage() {
       } else {
         throw new Error("Invalid response from server");
       }
-    } catch (err) {
+    } catch (err:any) {
       setError(err.message || "Authentication failed");
       console.error("Auth error:", err);
     } finally {

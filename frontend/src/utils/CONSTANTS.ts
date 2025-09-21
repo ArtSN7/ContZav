@@ -11,3 +11,5 @@ export const CONTENT_ROUTE_SCRIPT = CONTENT_CREATE_ROUTE + "/script"
 export const CONTENT_ROUTE_AVATAR = CONTENT_CREATE_ROUTE + "/avatar"
 export const CONTENT_ROUTE_COMPETITORS = CONTENT_CREATE_ROUTE + "/competitors"
 export const CONTENT_ROUTE_VIDEO_PREVIEW = CONTENT_CREATE_ROUTE + "/video_preview"
+
+export const SUCCESS_PAGE_ROUTE = "/success_page"
