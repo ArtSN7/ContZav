@@ -3,7 +3,18 @@ import { AIService } from '../services/ai.service.js';
 import { GenerateNicheDto, GenerateQuestionsDto, GenerateContentDto, ApproveContentDto, ScheduleContentDto } from '../dtos/ai.dto.js';
 import { AIContentModel } from '../models/AIContent.js';
 
+/**
+ * Управление AI-генерацией контента
+ * От создания идей до готовых видео и текстов
+ */
+
 export class AIController {
+/**
+   * Попросить AI придумать вопросы по выбранной теме
+   * Например: "Строительные материалы" → "Как выбрать кирпич?", "Что лучше: газобетон или пеноблок?"
+   * @body {string} niche - тема для контента
+   * @body {string} contentType - видео, текст или комбинированный
+   */
     static async generateNicheQuestions(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -16,6 +27,10 @@ export class AIController {
         }
     }
 
+/**
+   * Тестовая версия генерации вопросов (для разработки)
+   * Возвращает готовые вопросы без реального AI
+   */
     static async generateNicheQuestionsMock(req: Request, res: Response) {
         try {
             const userId = "req.user!.id";
@@ -28,6 +43,11 @@ export class AIController {
         }
     }
 
+  /**
+   * Создать готовый контент на основе выбранных вопросов
+   * AI напишет сценарий для видео или готовый текст поста
+   * @body {string[]} selectedQuestions - какие вопросы раскрыть в контенте
+   */
     static async generateContent(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -52,6 +72,10 @@ export class AIController {
         }
     }
 
+  /**
+   * Получить конкретный созданный контент по его ID
+   * @param {string} contentId - уникальный идентификатор контента
+   */
     static async getContent(req: Request, res: Response) {
         try {
             const { contentId } = req.params;
@@ -62,6 +86,10 @@ export class AIController {
         }
     }
 
+/**
+   * Получить весь контент текущего пользователя
+   * Список всех созданных видео, постов и черновиков
+   */
     static async getUserContent(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -72,6 +100,12 @@ export class AIController {
         }
     }
 
+/**
+   * Одобрить или отклонить сгенерированный контент
+   * Если не понравилось - можно попросить AI переделать
+   * @body {boolean} approved - нравится контент или нет
+   * @body {string} feedback - что именно не понравилось
+   */
     static async approveContent(req: Request, res: Response) {
         try {
             const dto: ApproveContentDto = req.body;
@@ -82,6 +116,10 @@ export class AIController {
         }
     }
 
+  /**
+   * Попросить AI переделать контент с учетом замечаний
+   * Используется когда пользователь не одобрил первый вариант
+   */
     static async regenerateContent(req: Request, res: Response) {
         try {
             const { contentId } = req.params;
@@ -112,6 +150,12 @@ export class AIController {
         }
     }
 
+/**
+   * Запланировать публикацию контента в соцсетях
+   * Выбрать дату, время и платформы для публикации
+   * @body {string[]} platforms - куда публиковать (youtube, instagram и т.д.)
+   * @body {Date} publishDate - когда опубликовать
+   */
     static async scheduleContentMock(req: Request, res: Response) {
         try {
             const dto: ScheduleContentDto = req.body;
@@ -122,6 +166,10 @@ export class AIController {
         }
     }
 
+/**
+   * Скачать готовый контент
+   * Для видео - ссылка на скачивание, для текста - текстовый файл
+   */
     static async downloadContent(req: Request, res: Response) {
         try {
             const { contentId } = req.params;
