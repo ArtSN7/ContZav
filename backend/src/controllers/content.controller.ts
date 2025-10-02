@@ -5,7 +5,19 @@ import { SocialService } from '../services/social.service.js';
 import { AppError } from '../exceptions/AppError.js';
 import { contentCreationSchema, contentUpdateSchema } from '../dtos/content.dto.js';
 
+/**
+ * Управление созданием и публикацией контента
+ * Связывает AI-генерацию с реальными публикациями в соцсетях
+ */
+
 export class ContentController {
+  /**
+   * Создать новый контент с помощью AI
+   * Система сама придумает идеи и сгенерирует материал
+   * @body {string} title - заголовок контента
+   * @body {string} niche - тематика (строительство, кулинария и т.д.)
+   * @body {string} contentType - видео или текст
+   */
     static async generateContent(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             if (!req.user) throw new AppError('Unauthorized', 401);
@@ -48,6 +60,12 @@ export class ContentController {
         }
     }
 
+/**
+   * Опубликовать или запланировать публикацию готового контента
+   * Можно опубликовать сразу или выбрать дату в будущем
+   * @body {string[]} platforms - в какие соцсети публиковать
+   * @body {Date} scheduleDate - когда опубликовать (если не сейчас)
+   */
     static async publishContent(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             if (!req.user) throw new AppError('Unauthorized', 401);
@@ -70,6 +88,10 @@ export class ContentController {
         }
     }
 
+/**
+   * Получить весь контент пользователя
+   * Черновики, запланированные и уже опубликованные материалы
+   */
     static async getUserContent(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             if (!req.user) throw new AppError('Unauthorized', 401);
@@ -84,6 +106,10 @@ export class ContentController {
         }
     }
 
+/**
+   * Отредактировать существующий контент
+   * Можно изменить заголовок, описание или другие параметры
+   */
     static async updateContent(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             if (!req.user) throw new AppError('Unauthorized', 401);
