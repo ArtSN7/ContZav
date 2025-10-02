@@ -3,7 +3,14 @@ import { ProfileService } from '../services/profile.service.js';
 import { UpdateProfileDto, ChangePasswordDto, EnableTwoFactorDto } from '../dtos/profile.dto.js';
 import { UserModel } from '../models/User.js';
 
+/**
+ * Управление личным кабинетом и настройками безопасности
+ */
+
 export class ProfileController {
+/**
+   * Получить информацию о профиле пользователя
+   */
     static async getProfile(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -19,6 +26,12 @@ export class ProfileController {
         }
     }
 
+/**
+   * Обновить личные данные: имя, компанию, контакты
+   * @body {string} name - новое имя
+   * @body {string} company - новая компания
+   * @body {string} phone - новый телефон
+   */
     static async updateProfile(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -36,6 +49,12 @@ export class ProfileController {
         }
     }
 
+  /**
+   * Сменить пароль от аккаунта
+   * Требуется ввести текущий пароль для подтверждения
+   * @body {string} currentPassword - старый пароль
+   * @body {string} newPassword - новый пароль
+   */
     static async changePassword(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -57,6 +76,11 @@ export class ProfileController {
         }
     }
 
+/**
+   * Включить двухфакторную авторизацию
+   * Дополнительная защита через SMS или приложение
+   * @body {'sms'|'authenticator'} method - способ подтверждения
+   */
     static async enableTwoFactor(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -89,6 +113,10 @@ export class ProfileController {
         }
     }
 
+/**
+   * Посмотреть активные сессии (где вы авторизованы)
+   * Показывает все устройства и браузеры с доступом к аккаунту
+   */
     static async getActiveSessions(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
