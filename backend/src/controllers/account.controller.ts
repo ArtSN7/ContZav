@@ -1,7 +1,16 @@
 import { Request, Response } from 'express';
 import { AccountService } from '../services/account.service.js';
 
+/**
+ * Управление аккаунтом пользователя: подписки, платежи и соцсети
+ * Здесь обрабатываются все запросы связанные с настройками аккаунта
+ */
+
 export class AccountController {
+/**
+   * Получить информацию о текущей подписке пользователя
+   * Показывает какой тариф активен, когда заканчивается и сколько контента использовано
+   */
     static async getSubscription(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -12,6 +21,11 @@ export class AccountController {
         }
     }
 
+/**
+   * Изменить тарифный план пользователя
+   * Например, перейти с "Базового" на "Про" тариф
+   * @body {string} plan - название нового тарифного плана
+   */
     static async updateSubscription(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -23,6 +37,10 @@ export class AccountController {
         }
     }
 
+  /**
+   * Получить историю всех платежей пользователя
+   * Показывает когда, сколько и за что были списаны деньги
+   */
     static async getPaymentHistory(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -33,6 +51,11 @@ export class AccountController {
         }
     }
 
+/**
+   * Создать новый платеж (например, для пополнения баланса)
+   * @body {number} amount - сумма платежа
+   * @body {string} currency - валюта (RUB, USD и т.д.)
+   */
     static async createPayment(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -44,6 +67,10 @@ export class AccountController {
         }
     }
 
+  /**
+   * Запустить синхронизацию всех подключенных соцсетей
+   * Система обновит статистику подписчиков и последние посты
+   */
     static async syncSocialAccounts(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -54,6 +81,12 @@ export class AccountController {
         }
     }
 
+/**
+   * Обновить настройки для конкретной соцсети
+   * Например, включить/выключить авто-публикацию для YouTube
+   * @body {string} platform - какая соцсеть (youtube, instagram и т.д.)
+   * @body {object} settings - новые настройки
+   */
     static async updateSocialSettings(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
