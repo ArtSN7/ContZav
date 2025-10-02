@@ -9,7 +9,16 @@ import {AuthService} from '@/services/auth.service.js';
 import {logger} from '@/utils/logger.js';
 import {config} from '@/config/index.js';
 
+/**
+ * Вход, выход и регистрация в системе
+ * Работа с аккаунтом пользователя и авторизацией
+ */
+
 export class AuthController {
+/**
+   * Выйти из системы на всех устройствах
+   * Завершает все активные сессии пользователя
+   */
     static async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const {error} = await supabase.auth.signOut();
@@ -102,6 +111,10 @@ export class AuthController {
         }
     }
 
+  /**
+   * Получить полную информацию о профиле пользователя
+   * Личные данные, подключенные соцсети, подписка и настройки безопасности
+   */
     static async getProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             if (!req.user) throw new AppError('Unauthorized', 401);
@@ -118,6 +131,10 @@ export class AuthController {
         }
     }
 
+/**
+   * Начать авторизацию через Google
+   * Возвращает ссылку для перехода на страницу Google
+   */
     static async googleAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const state = generateState();
@@ -135,6 +152,10 @@ export class AuthController {
         }
     }
 
+/**
+   * Обработать ответ от Google после авторизации
+   * Система автоматически создает аккаунт если пользователь новый
+   */
     static async googleCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const {code, state, error: oauthError} = req.query;
@@ -163,6 +184,9 @@ export class AuthController {
         }
     }
 
+ /**
+   * Начать авторизацию через ВКонтакте
+   */
     static async vkAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const state = generateState();
@@ -245,6 +269,10 @@ export class AuthController {
         }
     }
 
+  /**
+   * Обновить access token когда старый истек
+   * Использует специальный долгоживущий refresh token
+   */
     static async refreshToken(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const {refreshToken} = req.cookies;
