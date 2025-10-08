@@ -1,6 +1,10 @@
 import jwt from 'jsonwebtoken';
 import { config } from '../config/index.js';
 
+/**
+ * Сервис для работы с JWT токенами
+ * Генерация, верификация и декодирование токенов
+ */
 export class TokenService {
     static generateAccessToken(userId: string, email: string): string {
         return jwt.sign(

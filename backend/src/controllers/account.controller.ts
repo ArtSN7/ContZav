@@ -2,15 +2,16 @@ import { Request, Response } from 'express';
 import { AccountService } from '../services/account.service.js';
 
 /**
- * Управление аккаунтом пользователя: подписки, платежи и соцсети
- * Здесь обрабатываются все запросы связанные с настройками аккаунта
+ * Контроллер для управления аккаунтом пользователя
+ * Отвечает за подписки, платежи и настройки социальных сетей
  */
-
 export class AccountController {
-/**
-   * Получить информацию о текущей подписке пользователя
-   * Показывает какой тариф активен, когда заканчивается и сколько контента использовано
-   */
+    /**
+  * Получить информацию о текущей подписке пользователя
+  * req - Объект запроса Express с авторизованным пользователем
+  * res - Объект ответа Express
+  * {Subscription} - Информация о подписке: тариф, срок действия, использованные лимиты
+  */
     static async getSubscription(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -21,11 +22,13 @@ export class AccountController {
         }
     }
 
-/**
-   * Изменить тарифный план пользователя
-   * Например, перейти с "Базового" на "Про" тариф
-   * @body {string} plan - название нового тарифного плана
-   */
+    /**
+  * Изменить тарифный план пользователя
+  * req - Запрос с новым названием тарифного плана в теле
+  * req.body.plan - Название нового тарифного плана (например, "pro", "business")
+  * res - Ответ с обновленной информацией о подписке
+  * {Subscription} - Обновленная информация о подписке
+  */
     static async updateSubscription(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -37,10 +40,12 @@ export class AccountController {
         }
     }
 
-  /**
-   * Получить историю всех платежей пользователя
-   * Показывает когда, сколько и за что были списаны деньги
-   */
+    /**
+  * Получить историю всех платежей пользователя
+  * req - Запрос от авторизованного пользователя
+  * res - Ответ со списком платежей
+  * {PaymentHistory[]} - Массив платежей с датами, суммами и статусами
+  */
     static async getPaymentHistory(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -51,11 +56,14 @@ export class AccountController {
         }
     }
 
-/**
-   * Создать новый платеж (например, для пополнения баланса)
-   * @body {number} amount - сумма платежа
-   * @body {string} currency - валюта (RUB, USD и т.д.)
-   */
+    /**
+     * Создать новый платеж (например, для пополнения баланса)
+     * req - Запрос с параметрами платежа в теле
+     * req.body.amount - Сумма платежа в числовом формате
+     * req.body.currency - Валюта платежа (RUB, USD, EUR)
+     * res - Ответ с информацией о созданном платеже
+     * {PaymentHistory} - Информация о созданном платеже
+     */
     static async createPayment(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -67,10 +75,13 @@ export class AccountController {
         }
     }
 
-  /**
-   * Запустить синхронизацию всех подключенных соцсетей
-   * Система обновит статистику подписчиков и последние посты
-   */
+    /**
+  * Запустить синхронизацию всех подключенных социальных сетей
+  * Обновляет статистику подписчиков и последние посты
+  * req - Запрос от авторизованного пользователя
+  * res - Ответ с подтверждением начала синхронизации
+  * {Object} - Сообщение о начале синхронизации
+  */
     static async syncSocialAccounts(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -81,12 +92,14 @@ export class AccountController {
         }
     }
 
-/**
-   * Обновить настройки для конкретной соцсети
-   * Например, включить/выключить авто-публикацию для YouTube
-   * @body {string} platform - какая соцсеть (youtube, instagram и т.д.)
-   * @body {object} settings - новые настройки
-   */
+    /**
+  * Обновить настройки для конкретной социальной сети
+  * req - Запрос с параметрами настройки в теле
+  * req.body.platform - Идентификатор платформы (youtube, instagram, vk и т.д.)
+  * req.body.settings - Новые настройки в виде объекта
+  * res - Ответ с подтверждением обновления
+  * {Object} - Сообщение об успешном обновлении настроек
+  */
     static async updateSocialSettings(req: Request, res: Response) {
         try {
             const userId = req.user!.id;

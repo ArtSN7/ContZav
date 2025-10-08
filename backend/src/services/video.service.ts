@@ -2,6 +2,10 @@ import axios from 'axios';
 import { config } from '../config/index.js';
 import { logger } from '../utils/logger.js';
 
+/**
+ * Сервис для генерации видео контента
+ * Интеграция с внешними сервисами генерации видео
+ */
 export class VideoService {
     static async generateVideo(script: string, style: string, tone: string): Promise<string> {
         try {

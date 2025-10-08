@@ -2,7 +2,18 @@ import { Request, Response } from 'express';
 import { SubscriptionService } from '../services/subscription.service.js';
 import { CreateSubscriptionDto, UpdateSubscriptionDto } from '../dtos/subscription.dto.js';
 
+/**
+ * Контроллер для управления подписками и тарифными планами
+ * Для пользователей: выбор тарифов, управление подпиской
+ * Для администраторов: создание и редактирование тарифных планов
+ */
 export class SubscriptionController {
+    /**
+  * Получить список всех доступных тарифных планов
+  * req - Запрос от авторизованного пользователя
+  * res - Ответ с массивом тарифных планов
+  * {SubscriptionPlan[]} - Массив всех тарифных планов
+  */
     static async getAllPlans(req: Request, res: Response) {
         try {
             const plans = await SubscriptionService.getAllPlans();
@@ -12,6 +23,13 @@ export class SubscriptionController {
         }
     }
 
+    /**
+ * Получить информацию о конкретном тарифном плане
+ * req - Запрос с ID тарифного плана
+ * req.params.planId - ID тарифного плана
+ * res - Ответ с информацией о тарифе
+ * {SubscriptionPlan} - Полная информация о тарифном плане
+ */
     static async getPlan(req: Request, res: Response) {
         try {
             const { planId } = req.params;
@@ -22,6 +40,15 @@ export class SubscriptionController {
         }
     }
 
+    /**
+   * Создать новый тарифный план (только для администраторов)
+   * req - Запрос с данными нового тарифного плана
+   * req.body.name - Название тарифного плана
+   * req.body.price - Цена тарифа
+   * req.body.features - Массив доступных функций
+   * res - Ответ с созданным тарифным планом
+   * {SubscriptionPlan} - Созданный тарифный план
+   */
     static async createPlan(req: Request, res: Response) {
         try {
             const planData: CreateSubscriptionDto = req.body;
@@ -32,6 +59,14 @@ export class SubscriptionController {
         }
     }
 
+    /**
+  * Обновить существующий тарифный план (только для администраторов)
+  * req - Запрос с ID плана и новыми данными
+  * req.params.planId - ID тарифного плана для обновления
+  * req.body - Новые данные тарифного плана
+  * res - Ответ с обновленным тарифным планом
+  * {SubscriptionPlan} - Обновленный тарифный план
+  */
     static async updatePlan(req: Request, res: Response) {
         try {
             const { planId } = req.params;
@@ -43,6 +78,13 @@ export class SubscriptionController {
         }
     }
 
+    /**
+  * Удалить тарифный план (только для администраторов)
+  * req - Запрос с ID плана для удаления
+  * req.params.planId - ID тарифного плана для удаления
+  * res - Ответ с подтверждением удаления
+  * {Object} - Сообщение об успешном удалении тарифного плана
+  */
     static async deletePlan(req: Request, res: Response) {
         try {
             const { planId } = req.params;
@@ -53,6 +95,12 @@ export class SubscriptionController {
         }
     }
 
+    /**
+   * Получить информацию о текущей подписке пользователя
+   * req - Запрос от авторизованного пользователя
+   * res - Ответ с информацией о подписке
+   * {UserSubscription} - Текущая подписка пользователя
+   */
     static async getUserSubscription(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -63,6 +111,13 @@ export class SubscriptionController {
         }
     }
 
+    /**
+  * Изменить тарифный план пользователя
+  * req - Запрос с новым ID тарифного плана
+  * req.body.planId - ID нового тарифного плана
+  * res - Ответ с обновленной подпиской
+  * {UserSubscription} - Обновленная подписка пользователя
+  */
     static async updateUserSubscription(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -74,6 +129,13 @@ export class SubscriptionController {
         }
     }
 
+    /**
+   * Отменить подписку пользователя
+   * Подписка остается активной до конца оплаченного периода
+   * req - Запрос от авторизованного пользователя
+   * res - Ответ с обновленной подпиской
+   * {UserSubscription} - Подписка с статусом "отменена"
+   */
     static async cancelSubscription(req: Request, res: Response) {
         try {
             const userId = req.user!.id;

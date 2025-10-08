@@ -3,6 +3,10 @@ import { UserProfile, TwoFactorSettings, ActiveSession } from '../types/profile.
 import { hash, compare } from 'bcryptjs';
 import { supabase } from '../services/supabase.service.js';
 
+/**
+ * Сервис для управления профилем пользователя
+ * Личные данные, безопасность, активные сессии
+ */
 export class ProfileService {
     static async getProfile(userId: string): Promise<UserProfile> {
         return ProfileModel.findById(userId);

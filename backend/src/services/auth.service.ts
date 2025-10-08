@@ -5,6 +5,10 @@ import { randomBytes } from 'crypto';
 import { AppError } from '../exceptions/AppError.js';
 import { TokenService } from './token.service.js';
 
+/**
+ * Сервис для аутентификации и авторизации пользователей
+ * Вход, выход, регистрация через OAuth провайдеров
+ */
 export class AuthService {
     static async handleOAuthCallback(platform: string, code: string) {
         let tokens: any;

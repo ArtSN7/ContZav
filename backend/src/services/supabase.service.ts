@@ -12,6 +12,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 // export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
+/**
+ * Сервис для работы с Supabase
+ * Выполнение запросов и управление транзакциями
+ */
 export class SupabaseService {
     static async executeQuery<T>(query: string, params?: any[]): Promise<T[]> {
         const { data, error } = await supabase.rpc('execute_query', { query, params });

@@ -1,6 +1,10 @@
 import { supabase } from '../services/supabase.service.js';
 import { ActiveSession } from '../types/profile.js';
 
+/**
+ * Сервис для управления сессиями пользователя
+ * Создание, обновление и завершение сессий
+ */
 export class SessionService {
     static async createSession(userId: string, deviceInfo: string, ipAddress: string, location: string): Promise<ActiveSession> {
         const { data, error } = await supabase

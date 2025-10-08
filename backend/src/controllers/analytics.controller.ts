@@ -2,7 +2,20 @@ import { Request, Response } from 'express';
 import { AnalyticsService } from '../services/analytics.service.js';
 import { AnalyticsFilterDto } from '../dtos/analytics.dto.js';
 
+/**
+ * Контроллер для работы с аналитикой контента
+ * Статистика просмотров, вовлеченности и эффективности публикаций
+ */
 export class AnalyticsController {
+    /**
+   * Получить аналитику для конкретного контента
+   * req - Запрос с ID контента и фильтрами по дате
+   * req.params.contentId - ID контента для анализа
+   * req.query.startDate - Начальная дата периода (необязательно)
+   * req.query.endDate - Конечная дата периода (необязательно)
+   * res - Ответ с аналитикой контента
+   * {ContentAnalytics} - Статистика просмотров, лайков, комментариев и т.д.
+   */
     static async getContentAnalytics(req: Request, res: Response) {
         try {
             const { contentId } = req.params;
@@ -18,6 +31,15 @@ export class AnalyticsController {
         }
     }
 
+    /**
+   * Получить общую аналитику пользователя по всем контентам
+   * req - Запрос с фильтрами по дате и платформе
+   * req.query.startDate - Начальная дата периода анализа
+   * req.query.endDate - Конечная дата периода анализа
+   * req.query.platform - Фильтр по платформе (необязательно)
+   * res - Ответ с общей аналитикой пользователя
+   * {UserAnalytics} - Сводная статистика по всем контентам пользователя
+   */
     static async getUserAnalytics(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -33,6 +55,15 @@ export class AnalyticsController {
         }
     }
 
+    /**
+   * Получить топ контента пользователя по эффективности
+   * req - Запрос с фильтрами и лимитом результатов
+   * req.query.startDate - Начальная дата периода
+   * req.query.endDate - Конечная дата периода
+   * req.query.limit - Количество результатов (по умолчанию 5)
+   * res - Ответ с массивом лучшего контента
+   * {ContentAnalytics[]} - Массив контента отсортированный по эффективности
+   */
     static async getTopContent(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -49,6 +80,14 @@ export class AnalyticsController {
         }
     }
 
+    /**
+   * Сравнить эффективность контента на разных платформах
+   * req - Запрос с периодом для сравнения
+   * req.query.startDate - Начальная дата периода
+   * req.query.endDate - Конечная дата периода
+   * res - Ответ со сравнением платформ
+   * {Object} - Сравнительная аналитика по платформам
+   */
     static async getPlatformComparison(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -64,6 +103,16 @@ export class AnalyticsController {
         }
     }
 
+    /**
+   * Экспортировать аналитику в CSV или JSON формате
+   * req - Запрос с параметрами экспорта
+   * req.query.startDate - Начальная дата периода
+   * req.query.endDate - Конечная дата периода
+   * req.query.platform - Фильтр по платформе
+   * req.query.format - Формат экспорта: 'csv' или 'json'
+   * res - Ответ с файлом экспорта или JSON данными
+   * {Buffer|Object} - CSV файл или JSON данные аналитики
+   */
     static async exportAnalytics(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -88,6 +137,11 @@ export class AnalyticsController {
         }
     }
 
+    /**
+  * Вспомогательный метод для конвертации объекта в CSV строку
+  * data - Объект данных для конвертации
+  * {string} - CSV строка с заголовками и значениями
+  */
     private static convertToCSV(data: any): string {
         const flattenObject = (obj: any, prefix = ''): any => {
             return Object.keys(obj).reduce((acc, key) => {

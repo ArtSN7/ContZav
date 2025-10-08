@@ -6,17 +6,19 @@ import { AppError } from '../exceptions/AppError.js';
 import { contentCreationSchema, contentUpdateSchema } from '../dtos/content.dto.js';
 
 /**
- * Управление созданием и публикацией контента
- * Связывает AI-генерацию с реальными публикациями в соцсетях
+ * Контроллер для управления контентом пользователя
+ * Создание, публикация и редактирование контента
  */
-
 export class ContentController {
-  /**
-   * Создать новый контент с помощью AI
-   * Система сама придумает идеи и сгенерирует материал
-   * @body {string} title - заголовок контента
-   * @body {string} niche - тематика (строительство, кулинария и т.д.)
-   * @body {string} contentType - видео или текст
+    /**
+   * Создать новый контент вручную (без AI)
+   * req - Запрос с данными для создания контента
+   * req.body.title - Заголовок контента
+   * req.body.description - Описание контента
+   * req.body.contentType - Тип контента: текст, видео, изображение
+   * req.body.content - Текст контента или URL медиа
+   * res - Ответ с созданным контентом
+   * {Content} - Созданный контент с ID и статусом
    */
     static async generateContent(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
@@ -60,11 +62,14 @@ export class ContentController {
         }
     }
 
-/**
-   * Опубликовать или запланировать публикацию готового контента
-   * Можно опубликовать сразу или выбрать дату в будущем
-   * @body {string[]} platforms - в какие соцсети публиковать
-   * @body {Date} scheduleDate - когда опубликовать (если не сейчас)
+    /**
+   * Опубликовать контент в выбранных социальных сетях
+   * req - Запрос с параметрами публикации
+   * req.body.contentId - ID контента для публикации
+   * req.body.platforms - Массив платформ для публикации
+   * req.body.scheduleDate - Дата публикации (если отложенная)
+   * res - Ответ с результатом публикации
+   * {Object} - Статус публикации и ссылки на посты
    */
     static async publishContent(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
@@ -88,10 +93,15 @@ export class ContentController {
         }
     }
 
-/**
-   * Получить весь контент пользователя
-   * Черновики, запланированные и уже опубликованные материалы
-   */
+    /**
+  * Получить список всего контента пользователя
+  * req - Запрос с параметрами пагинации и фильтрации
+  * req.query.page - Номер страницы (необязательно)
+  * req.query.limit - Количество элементов на странице (необязательно)
+  * req.query.status - Фильтр по статусу (черновик, опубликован и т.д.)
+  * res - Ответ с массивом контента
+  * {Content[]} - Массив контента пользователя
+  */
     static async getUserContent(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             if (!req.user) throw new AppError('Unauthorized', 401);
@@ -106,9 +116,13 @@ export class ContentController {
         }
     }
 
-/**
-   * Отредактировать существующий контент
-   * Можно изменить заголовок, описание или другие параметры
+    /**
+   * Обновить существующий контент
+   * req - Запрос с ID контента и новыми данными
+   * req.params.id - ID контента для обновления
+   * req.body - Новые данные контента
+   * res - Ответ с обновленным контентом
+   * {Content} - Обновленный контент
    */
     static async updateContent(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {

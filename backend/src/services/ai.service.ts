@@ -4,6 +4,10 @@ import { n8nService } from './n8n.service.js';
 import { MockAiService } from './mockAiService.js';
 import { GenerateNicheDto, GenerateQuestionsDto, GenerateContentDto } from '../dtos/ai.dto.js';
 
+/**
+ * Сервис для работы с AI-генерацией контента
+ * От создания вопросов до готовых видео и текстов
+ */
 export class AIService {
     static async generateNicheQuestions(userId: string, dto: GenerateNicheDto): Promise<string[]> {
         const request = await AIGenerationModel.create({

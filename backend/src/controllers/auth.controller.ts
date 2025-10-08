@@ -1,27 +1,30 @@
-import {Request, Response, NextFunction} from 'express';
-import {supabase} from '../services/supabase.service.js';
-import {UserModel} from '../models/User.js';
-import {OAuthService} from '../services/oauth.service.js';
-import {generateState, getGoogleAuthUrl, getVKAuthUrl, getAppleAuthUrl} from '../utils/oauth.utils.js';
-import {AppError} from '../exceptions/AppError.js';
-import {randomBytes} from 'crypto';
-import {AuthService} from '@/services/auth.service.js';
-import {logger} from '@/utils/logger.js';
-import {config} from '@/config/index.js';
+import { Request, Response, NextFunction } from 'express';
+import { supabase } from '../services/supabase.service.js';
+import { UserModel } from '../models/User.js';
+import { OAuthService } from '../services/oauth.service.js';
+import { generateState, getGoogleAuthUrl, getVKAuthUrl, getAppleAuthUrl } from '../utils/oauth.utils.js';
+import { AppError } from '../exceptions/AppError.js';
+import { randomBytes } from 'crypto';
+import { AuthService } from '@/services/auth.service.js';
+import { logger } from '@/utils/logger.js';
+import { config } from '@/config/index.js';
 
 /**
- * Вход, выход и регистрация в системе
- * Работа с аккаунтом пользователя и авторизацией
+ * Контроллер для аутентификации и авторизации пользователей
+ * Вход, выход, регистрация через OAuth провайдеров
  */
-
 export class AuthController {
-/**
+    /**
    * Выйти из системы на всех устройствах
    * Завершает все активные сессии пользователя
+   * req - Запрос от авторизованного пользователя
+   * res - Ответ с подтверждением выхода
+   * next - Функция next Express для обработки ошибок
+   * {Object} - Подтверждение успешного выхода
    */
     static async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const {error} = await supabase.auth.signOut();
+            const { error } = await supabase.auth.signOut();
             if (error) throw new AppError('Logout failed', 500);
 
             res.json({
@@ -33,6 +36,14 @@ export class AuthController {
         }
     }
 
+    /**
+   * Тестовый метод для получения профиля (для разработки)
+   * Возвращает моковые данные пользователя без обращения к БД
+   * req - Запрос (авторизация не требуется)
+   * res - Ответ с тестовыми данными профиля
+   * next - Функция next Express для обработки ошибок
+   * {Object} - Полные тестовые данные пользователя
+   */
     static async getProfileMock(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const mockUser = {
@@ -51,8 +62,8 @@ export class AuthController {
                     followers: "12.5K",
                     lastSync: "2 часа назад"
                 },
-                {provider: "instagram", connected: false, username: "@stroymaterials_ru", followers: "", lastSync: ""},
-                {provider: "vk", connected: false, username: "stroymaterials", followers: "", lastSync: ""},
+                { provider: "instagram", connected: false, username: "@stroymaterials_ru", followers: "", lastSync: "" },
+                { provider: "vk", connected: false, username: "stroymaterials", followers: "", lastSync: "" },
                 {
                     provider: "telegram",
                     connected: true,
@@ -60,8 +71,8 @@ export class AuthController {
                     followers: "3.4K",
                     lastSync: "5 минут назад"
                 },
-                {provider: "tiktok", connected: true, username: "", followers: "8.9K", lastSync: "1 час назад"},
-                {provider: "facebook", connected: false, username: "", followers: "", lastSync: ""}
+                { provider: "tiktok", connected: true, username: "", followers: "8.9K", lastSync: "1 час назад" },
+                { provider: "facebook", connected: false, username: "", followers: "", lastSync: "" }
             ];
 
             const mockSubscription = {
@@ -77,17 +88,17 @@ export class AuthController {
                     networksLimit: 10
                 },
                 billingHistory: [
-                    {date: "15.12.2024", amount: 5990, status: "paid", invoice: "INV-001234"},
-                    {date: "15.11.2024", amount: 5990, status: "paid", invoice: "INV-001233"},
-                    {date: "15.10.2024", amount: 5990, status: "paid", invoice: "INV-001232"}
+                    { date: "15.12.2024", amount: 5990, status: "paid", invoice: "INV-001234" },
+                    { date: "15.11.2024", amount: 5990, status: "paid", invoice: "INV-001233" },
+                    { date: "15.10.2024", amount: 5990, status: "paid", invoice: "INV-001232" }
                 ]
             };
 
             const mockSecurity = {
                 twoFactorEnabled: true,
                 activeSessions: [
-                    {device: "MacBook Pro", location: "Москва, Россия", current: true, lastActive: "Сейчас"},
-                    {device: "iPhone 15", location: "Москва, Россия", current: false, lastActive: "2 часа назад"},
+                    { device: "MacBook Pro", location: "Москва, Россия", current: true, lastActive: "Сейчас" },
+                    { device: "iPhone 15", location: "Москва, Россия", current: false, lastActive: "2 часа назад" },
                     {
                         device: "Chrome на Windows",
                         location: "Санкт-Петербург, Россия",
@@ -111,9 +122,13 @@ export class AuthController {
         }
     }
 
-  /**
+    /**
    * Получить полную информацию о профиле пользователя
    * Личные данные, подключенные соцсети, подписка и настройки безопасности
+   * req - Запрос от авторизованного пользователя
+   * res - Ответ с данными профиля
+   * next - Функция next Express для обработки ошибок
+   * {Object} - Полные данные профиля пользователя
    */
     static async getProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
@@ -124,17 +139,21 @@ export class AuthController {
 
             res.json({
                 success: true,
-                data: {user, socialAccounts},
+                data: { user, socialAccounts },
             });
         } catch (error) {
             next(error);
         }
     }
 
-/**
-   * Начать авторизацию через Google
-   * Возвращает ссылку для перехода на страницу Google
-   */
+    /**
+  * Начать авторизацию через Google OAuth
+  * Возвращает ссылку для перехода на страницу Google
+  * req - Запрос на начало OAuth процесса
+  * res - Ответ с URL для авторизации и state токеном
+  * next - Функция next Express для обработки ошибок
+  * {Object} - URL для OAuth авторизации и state параметр
+  */
     static async googleAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const state = generateState();
@@ -145,20 +164,26 @@ export class AuthController {
 
             res.json({
                 success: true,
-                data: {authUrl, state},
+                data: { authUrl, state },
             });
         } catch (error) {
             next(error);
         }
     }
 
-/**
+    /**
    * Обработать ответ от Google после авторизации
    * Система автоматически создает аккаунт если пользователь новый
+   * req - Запрос с кодом авторизации от Google
+   * req.query.code - Код авторизации от Google OAuth
+   * req.query.state - State параметр для проверки безопасности
+   * res - Редирект на фронтенд с токенами
+   * next - Функция next Express для обработки ошибок
+   * {void} - Редирект на фронтенд с параметрами авторизации
    */
     static async googleCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const {code, state, error: oauthError} = req.query;
+            const { code, state, error: oauthError } = req.query;
 
             if (oauthError) {
                 throw new AppError(`Google OAuth error: ${oauthError}`, 400);
@@ -184,9 +209,13 @@ export class AuthController {
         }
     }
 
- /**
-   * Начать авторизацию через ВКонтакте
-   */
+    /**
+  * Начать авторизацию через ВКонтакте OAuth
+  * req - Запрос на начало OAuth процесса
+  * res - Ответ с URL для авторизации ВК
+  * next - Функция next Express для обработки ошибок
+  * {Object} - URL для VK OAuth и state параметр
+  */
     static async vkAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const state = generateState();
@@ -194,16 +223,24 @@ export class AuthController {
 
             res.json({
                 success: true,
-                data: {authUrl, state},
+                data: { authUrl, state },
             });
         } catch (error) {
             next(error);
         }
     }
 
+    /**
+ * Обработать ответ от ВКонтакте после авторизации
+ * req - Запрос с кодом авторизации от VK
+ * req.query.code - Код авторизации от VK OAuth
+ * res - Редирект на фронтенд с токенами
+ * next - Функция next Express для обработки ошибок
+ * {void} - Редирект на фронтенд с параметрами авторизации
+ */
     static async vkCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const {code, error: oauthError} = req.query;
+            const { code, error: oauthError } = req.query;
 
             if (oauthError) {
                 throw new AppError(`VK OAuth error: ${oauthError}`, 400);
@@ -228,6 +265,13 @@ export class AuthController {
         }
     }
 
+    /**
+   * Начать авторизацию через Apple OAuth
+   * req - Запрос на начало OAuth процесса
+   * res - Ответ с URL для авторизации Apple
+   * next - Функция next Express для обработки ошибок
+   * {Object} - URL для Apple OAuth и state параметр
+   */
     static async appleAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const state = generateState();
@@ -235,16 +279,24 @@ export class AuthController {
 
             res.json({
                 success: true,
-                data: {authUrl, state},
+                data: { authUrl, state },
             });
         } catch (error) {
             next(error);
         }
     }
 
+    /**
+   * Обработать ответ от Apple после авторизации
+   * req - Запрос с кодом авторизации от Apple
+   * req.body.code - Код авторизации от Apple OAuth
+   * res - Редирект на фронтенд с токенами
+   * next - Функция next Express для обработки ошибок
+   * {void} - Редирект на фронтенд с параметрами авторизации
+   */
     static async appleCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const {code, error: oauthError} = req.body;
+            const { code, error: oauthError } = req.body;
 
             if (oauthError) {
                 throw new AppError(`Apple OAuth error: ${oauthError}`, 400);
@@ -269,13 +321,17 @@ export class AuthController {
         }
     }
 
-  /**
-   * Обновить access token когда старый истек
-   * Использует специальный долгоживущий refresh token
-   */
+    /**
+  * Обновить access токен с помощью refresh токена
+  * Используется когда access токен истек
+  * req - Запрос с refresh токеном в куках
+  * res - Ответ с новыми токенами
+  * next - Функция next Express для обработки ошибок
+  * {Object} - Новые access и refresh токены
+  */
     static async refreshToken(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const {refreshToken} = req.cookies;
+            const { refreshToken } = req.cookies;
             if (!refreshToken) throw new AppError('Refresh token required', 401);
 
             const result = await AuthService.refreshToken(refreshToken);

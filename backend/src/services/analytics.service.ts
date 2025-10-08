@@ -1,6 +1,10 @@
 import { AnalyticsModel } from '../models/Analytics.js';
 import { UserAnalytics, ContentAnalytics } from '../types/analytics.js';
 
+/**
+ * Сервис для работы с аналитикой контента
+ * Статистика просмотров, вовлеченности и эффективности публикаций
+ */
 export class AnalyticsService {
     static async getContentAnalytics(contentId: string, startDate: Date, endDate: Date) {
         return AnalyticsModel.getContentAnalytics(contentId, startDate, endDate);

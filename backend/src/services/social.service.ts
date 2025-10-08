@@ -1,6 +1,10 @@
 import { N8nService } from './n8n.service.js';
 import { supabase } from './supabase.service.js';
 
+/**
+ * Сервис для работы с социальными сетями
+ * Подключение аккаунтов, публикация контента
+ */
 export class SocialService {
     static async connectAccount(platform: string, credentials: any, userId: string): Promise<void> {
         const { error } = await supabase

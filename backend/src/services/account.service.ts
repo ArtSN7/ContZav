@@ -2,6 +2,10 @@ import { AccountModel } from '../models/Account.js';
 import { Subscription, PaymentHistory } from '../types/profile.js';
 import { n8nService } from './n8n.service.js';
 
+/**
+ * Сервис для управления аккаунтом пользователя
+ * Работа с подписками, платежами и социальными сетями
+ */
 export class AccountService {
     static async getSubscription(userId: string): Promise<Subscription> {
         return AccountModel.getSubscription(userId);

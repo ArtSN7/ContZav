@@ -3,6 +3,10 @@ import { config } from '../config/index.js';
 import { OAuthToken, OAuthProfile } from '../types/index.js';
 import { logger } from '@/utils/logger.js';
 
+/**
+ * Сервис для работы с OAuth провайдерами
+ * Обмен кодов на токены, получение профилей пользователей
+ */
 export class OAuthService {
     static async exchangeGoogleCode(code: string): Promise<{ tokens: OAuthToken; profile: OAuthProfile }> {
         try {

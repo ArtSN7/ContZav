@@ -4,13 +4,16 @@ import { UpdateProfileDto, ChangePasswordDto, EnableTwoFactorDto } from '../dtos
 import { UserModel } from '../models/User.js';
 
 /**
- * Управление личным кабинетом и настройками безопасности
+ * Контроллер для управления профилем пользователя
+ * Личные данные, безопасность, активные сессии
  */
-
 export class ProfileController {
-/**
-   * Получить информацию о профиле пользователя
-   */
+    /**
+  * Получить полную информацию о профиле пользователя
+  * req - Запрос от авторизованного пользователя
+  * res - Ответ с данными профиля
+  * {UserProfile} - Полные данные профиля пользователя
+  */
     static async getProfile(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -26,11 +29,14 @@ export class ProfileController {
         }
     }
 
-/**
-   * Обновить личные данные: имя, компанию, контакты
-   * @body {string} name - новое имя
-   * @body {string} company - новая компания
-   * @body {string} phone - новый телефон
+    /**
+   * Обновить данные профиля пользователя
+   * req - Запрос с новыми данными профиля
+   * req.body.name - Новое имя пользователя
+   * req.body.email - Новый email (требует подтверждения)
+   * req.body.avatar_url - Новая ссылка на аватар
+   * res - Ответ с обновленным профилем
+   * {UserProfile} - Обновленные данные профиля
    */
     static async updateProfile(req: Request, res: Response) {
         try {
@@ -49,11 +55,14 @@ export class ProfileController {
         }
     }
 
-  /**
-   * Сменить пароль от аккаунта
-   * Требуется ввести текущий пароль для подтверждения
-   * @body {string} currentPassword - старый пароль
-   * @body {string} newPassword - новый пароль
+    /**
+   * Изменить пароль пользователя
+   * Требует подтверждения текущего пароля
+   * req - Запрос с паролями
+   * req.body.currentPassword - Текущий пароль для подтверждения
+   * req.body.newPassword - Новый пароль
+   * res - Ответ с подтверждением смены пароля
+   * {Object} - Сообщение об успешной смене пароля
    */
     static async changePassword(req: Request, res: Response) {
         try {
@@ -66,6 +75,12 @@ export class ProfileController {
         }
     }
 
+    /**
+ * Получить настройки двухфакторной аутентификации
+ * req - Запрос от авторизованного пользователя
+ * res - Ответ с настройками 2FA
+ * {TwoFactorSettings} - Текущие настройки двухфакторной аутентификации
+ */
     static async getTwoFactorSettings(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -76,11 +91,14 @@ export class ProfileController {
         }
     }
 
-/**
-   * Включить двухфакторную авторизацию
-   * Дополнительная защита через SMS или приложение
-   * @body {'sms'|'authenticator'} method - способ подтверждения
-   */
+    /**
+  * Включить двухфакторную аутентификацию
+  * req - Запрос с параметрами 2FA
+  * req.body.method - Метод 2FA: SMS или приложение-аутентификатор
+  * req.body.phoneNumber - Номер телефона (только для SMS метода)
+  * res - Ответ с настройками 2FA и резервными кодами
+  * {TwoFactorSettings} - Настройки 2FA с резервными кодами
+  */
     static async enableTwoFactor(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -92,6 +110,12 @@ export class ProfileController {
         }
     }
 
+    /**
+  * Отключить двухфакторную аутентификацию
+  * req - Запрос от авторизованного пользователя
+  * res - Ответ с обновленными настройками
+  * {TwoFactorSettings} - Настройки с отключенной 2FA
+  */
     static async disableTwoFactor(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -102,6 +126,14 @@ export class ProfileController {
         }
     }
 
+    /**
+  * Проверить правильность пароля пользователя
+  * Используется для подтверждения действий (удаление аккаунта и т.д.)
+  * req - Запрос с паролем для проверки
+  * req.body.password - Пароль для проверки
+  * res - Ответ с результатом проверки
+  * {Object} - Результат проверки пароля
+  */
     static async verifyPassword(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -113,9 +145,11 @@ export class ProfileController {
         }
     }
 
-/**
-   * Посмотреть активные сессии (где вы авторизованы)
-   * Показывает все устройства и браузеры с доступом к аккаунту
+    /**
+   * Получить список активных сессий пользователя
+   * req - Запрос от авторизованного пользователя
+   * res - Ответ с массивом активных сессий
+   * {ActiveSession[]} - Массив активных сессий с устройствами и локациями
    */
     static async getActiveSessions(req: Request, res: Response) {
         try {
@@ -127,6 +161,13 @@ export class ProfileController {
         }
     }
 
+    /**
+  * Завершить конкретную сессию пользователя
+  * req - Запрос с ID сессии для завершения
+  * req.params.sessionId - ID сессии для завершения
+  * res - Ответ с подтверждением завершения
+  * {Object} - Сообщение об успешном завершении сессии
+  */
     static async terminateSession(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -138,6 +179,13 @@ export class ProfileController {
         }
     }
 
+    /**
+   * Завершить все сессии пользователя кроме текущей
+   * Используется при смене пароля или подозрительной активности
+   * req - Запрос от авторизованного пользователя
+   * res - Ответ с подтверждением завершения сессий
+   * {Object} - Сообщение об успешном завершении всех сессий
+   */
     static async terminateAllSessions(req: Request, res: Response) {
         try {
             const userId = req.user!.id;

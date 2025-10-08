@@ -1,3 +1,7 @@
+/**
+ * Тестовый сервис для имитации работы AI
+ * Используется для разработки без подключения реальных AI сервисов
+ */
 export class MockAiService {
     private static delay(ms: number): Promise<void> {
         return new Promise(resolve => setTimeout(resolve, ms));
@@ -66,6 +70,6 @@ export class MockAiService {
 
     static async generateVideoContent(script: string): Promise<{ videoUrl: string }> {
         await this.delay(2000);
-        return {videoUrl: "/mock-generated-video.mp4"};
+        return { videoUrl: "/mock-generated-video.mp4" };
     }
 }
