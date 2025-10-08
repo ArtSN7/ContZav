@@ -8,6 +8,7 @@ const envSchema = z.object({
     PORT: z.string().transform(Number).default(5001),
     FRONTEND_URL: z.string().url().default('http://localhost:3000'),
     BACKEND_URL: z.string().url().default('http://localhost:5001'),
+    MONGODB_URI: z.string().url().default('http://localhost:5001'),
 
     SUPABASE_URL: z.string().url(),
     SUPABASE_ANON_KEY: z.string(),

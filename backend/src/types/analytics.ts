@@ -1,6 +1,7 @@
-export interface AnalyticsData {
-    id: string;
-    content_id: string;
+import { Document, Types } from 'mongoose';
+
+export interface IAnalyticsData extends Document {
+    content_id: Types.ObjectId;
     date: Date;
     views: number;
     reach: number;
@@ -15,7 +16,7 @@ export interface AnalyticsData {
     created_at: Date;
 }
 
-export interface ContentAnalytics {
+export interface IContentAnalytics {
     content_id: string;
     title: string;
     content_type: string;
@@ -31,7 +32,7 @@ export interface ContentAnalytics {
     followers_gained: number;
 }
 
-export interface UserAnalytics {
+export interface IUserAnalytics {
     total_views: number;
     total_reach: number;
     total_engagements: number;
@@ -41,12 +42,12 @@ export interface UserAnalytics {
     total_followers_gained: number;
     avg_engagement_rate: number;
     avg_click_through_rate: number;
-    top_content: ContentAnalytics[];
-    platform_breakdown: PlatformAnalytics[];
-    demographic_data: DemographicData;
+    top_content: IContentAnalytics[];
+    platform_breakdown: IPlatformAnalytics[];
+    demographic_data: IDemographicData;
 }
 
-export interface PlatformAnalytics {
+export interface IPlatformAnalytics {
     platform: string;
     views: number;
     reach: number;
@@ -57,23 +58,23 @@ export interface PlatformAnalytics {
     engagement_rate: number;
 }
 
-export interface DemographicData {
-    age_groups: AgeGroupData[];
-    genders: GenderData[];
-    locations: LocationData[];
+export interface IDemographicData {
+    age_groups: IAgeGroupData[];
+    genders: IGenderData[];
+    locations: ILocationData[];
 }
 
-export interface AgeGroupData {
+export interface IAgeGroupData {
     age_group: string;
     percentage: number;
 }
 
-export interface GenderData {
+export interface IGenderData {
     gender: string;
     percentage: number;
 }
 
-export interface LocationData {
+export interface ILocationData {
     location: string;
     percentage: number;
 }

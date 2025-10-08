@@ -1,6 +1,7 @@
-export interface AIContent {
-    id: string;
-    user_id: string;
+import { Document, Types } from 'mongoose';
+
+export interface IAIContent extends Document {
+    user_id: Types.ObjectId;
     niche: string;
     content_type: 'video' | 'text' | 'combination';
     generated_questions: string[];
@@ -20,9 +21,8 @@ export interface AIContent {
     updated_at: Date;
 }
 
-export interface AIGenerationRequest {
-    id: string;
-    user_id: string;
+export interface IAIGenerationRequest extends Document {
+    user_id: Types.ObjectId;
     type: 'niche' | 'questions' | 'content' | 'video';
     prompt: string;
     parameters: any;

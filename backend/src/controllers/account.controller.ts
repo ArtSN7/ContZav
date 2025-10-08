@@ -1,17 +1,13 @@
 import { Request, Response } from 'express';
 import { AccountService } from '../services/account.service.js';
 
-/**
- * Контроллер для управления аккаунтом пользователя
- * Отвечает за подписки, платежи и настройки социальных сетей
- */
 export class AccountController {
     /**
-  * Получить информацию о текущей подписке пользователя
-  * req - Объект запроса Express с авторизованным пользователем
-  * res - Объект ответа Express
-  * {Subscription} - Информация о подписке: тариф, срок действия, использованные лимиты
-  */
+     * Получить информацию о текущей подписке пользователя
+     * @param req - Объект запроса Express с авторизованным пользователем
+     * @param res - Объект ответа Express
+     * @returns {Object} Информация о подписке: тариф, срок действия, использованные лимиты
+     */
     static async getSubscription(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -23,17 +19,17 @@ export class AccountController {
     }
 
     /**
-  * Изменить тарифный план пользователя
-  * req - Запрос с новым названием тарифного плана в теле
-  * req.body.plan - Название нового тарифного плана (например, "pro", "business")
-  * res - Ответ с обновленной информацией о подписке
-  * {Subscription} - Обновленная информация о подписке
-  */
+     * Изменить тарифный план пользователя
+     * @param req - Запрос с новым ID тарифного плана в теле
+     * @param req.body.planId - ID нового тарифного плана
+     * @param res - Ответ с обновленной информацией о подписке
+     * @returns {Object} Обновленная информация о подписке
+     */
     static async updateSubscription(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
-            const { plan } = req.body;
-            const subscription = await AccountService.updateSubscription(userId, plan);
+            const { planId } = req.body;
+            const subscription = await AccountService.updateSubscription(userId, planId);
             res.json(subscription);
         } catch (error) {
             res.status(500).json({ error: 'Failed to update subscription' });
@@ -41,11 +37,11 @@ export class AccountController {
     }
 
     /**
-  * Получить историю всех платежей пользователя
-  * req - Запрос от авторизованного пользователя
-  * res - Ответ со списком платежей
-  * {PaymentHistory[]} - Массив платежей с датами, суммами и статусами
-  */
+     * Получить историю всех платежей пользователя
+     * @param req - Запрос от авторизованного пользователя
+     * @param res - Ответ со списком платежей
+     * @returns {Object[]} Массив платежей с датами, суммами и статусами
+     */
     static async getPaymentHistory(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -58,11 +54,11 @@ export class AccountController {
 
     /**
      * Создать новый платеж (например, для пополнения баланса)
-     * req - Запрос с параметрами платежа в теле
-     * req.body.amount - Сумма платежа в числовом формате
-     * req.body.currency - Валюта платежа (RUB, USD, EUR)
-     * res - Ответ с информацией о созданном платеже
-     * {PaymentHistory} - Информация о созданном платеже
+     * @param req - Запрос с параметрами платежа в теле
+     * @param req.body.amount - Сумма платежа в числовом формате
+     * @param req.body.currency - Валюта платежа (RUB, USD, EUR)
+     * @param res - Ответ с информацией о созданном платеже
+     * @returns {Object} Информация о созданном платеже
      */
     static async createPayment(req: Request, res: Response) {
         try {
@@ -76,12 +72,12 @@ export class AccountController {
     }
 
     /**
-  * Запустить синхронизацию всех подключенных социальных сетей
-  * Обновляет статистику подписчиков и последние посты
-  * req - Запрос от авторизованного пользователя
-  * res - Ответ с подтверждением начала синхронизации
-  * {Object} - Сообщение о начале синхронизации
-  */
+     * Запустить синхронизацию всех подключенных социальных сетей
+     * Обновляет статистику подписчиков и последние посты
+     * @param req - Запрос от авторизованного пользователя
+     * @param res - Ответ с подтверждением начала синхронизации
+     * @returns {Object} Сообщение о начале синхронизации
+     */
     static async syncSocialAccounts(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
@@ -93,13 +89,13 @@ export class AccountController {
     }
 
     /**
-  * Обновить настройки для конкретной социальной сети
-  * req - Запрос с параметрами настройки в теле
-  * req.body.platform - Идентификатор платформы (youtube, instagram, vk и т.д.)
-  * req.body.settings - Новые настройки в виде объекта
-  * res - Ответ с подтверждением обновления
-  * {Object} - Сообщение об успешном обновлении настроек
-  */
+     * Обновить настройки для конкретной социальной сети
+     * @param req - Запрос с параметрами настройки в теле
+     * @param req.body.platform - Идентификатор платформы (youtube, instagram, vk и т.д.)
+     * @param req.body.settings - Новые настройки в виде объекта
+     * @param res - Ответ с подтверждением обновления
+     * @returns {Object} Сообщение об успешном обновлении настроек
+     */
     static async updateSocialSettings(req: Request, res: Response) {
         try {
             const userId = req.user!.id;

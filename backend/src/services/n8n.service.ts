@@ -2,10 +2,6 @@ import axios from 'axios';
 import { config } from '../config/index.js';
 import { logger } from '../utils/logger.js';
 
-/**
- * Сервис для работы с n8n - платформой автоматизации
- * Отправка данных в workflow и получение статусов
- */
 export class N8nService {
     static async getWorkflowStatus(workflowId: string): Promise<any> {
         try {

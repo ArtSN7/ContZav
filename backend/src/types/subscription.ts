@@ -1,5 +1,6 @@
-export interface SubscriptionPlan {
-    id: string;
+import { Document, Types } from 'mongoose';
+
+export interface ISubscriptionPlan extends Document {
     name: string;
     price: number;
     currency: string;
@@ -11,10 +12,9 @@ export interface SubscriptionPlan {
     updated_at: Date;
 }
 
-export interface UserSubscription {
-    id: string;
-    user_id: string;
-    plan_id: string;
+export interface IUserSubscription extends Document {
+    user_id: Types.ObjectId;
+    plan_id: Types.ObjectId;
     status: 'active' | 'canceled' | 'expired';
     current_usage: number;
     current_social_networks: number;

@@ -1,51 +1,72 @@
-import { ProfileModel } from '../models/Profile.js';
-import { UserProfile, TwoFactorSettings, ActiveSession } from '../types/profile.js';
+import { UserProfile, TwoFactorSettings, ActiveSession } from '../models/Profile.js';
+import { User } from '../models/User.js';
 import { hash, compare } from 'bcryptjs';
-import { supabase } from '../services/supabase.service.js';
+import { Types } from 'mongoose';
 
-/**
- * Сервис для управления профилем пользователя
- * Личные данные, безопасность, активные сессии
- */
 export class ProfileService {
-    static async getProfile(userId: string): Promise<UserProfile> {
-        return ProfileModel.findById(userId);
+    static async getProfile(userId: string): Promise<any> {
+        const profile = await UserProfile.findOne({ user_id: new Types.ObjectId(userId) });
+        if (!profile) {
+            const user = await User.findById(userId);
+            if (!user) throw new Error('User not found');
+
+            const newProfile = new UserProfile({
+                user_id: user._id,
+                name: user.name,
+                avatar_url: user.avatar_url,
+                language: 'ru',
+                timezone: 'Europe/Moscow'
+            });
+            await newProfile.save();
+            return newProfile;
+        }
+        return profile;
     }
 
-    static async updateProfile(userId: string, profileData: Partial<UserProfile>): Promise<UserProfile> {
-        return ProfileModel.update(userId, profileData);
+    static async updateProfile(userId: string, profileData: any): Promise<any> {
+        const profile = await UserProfile.findOneAndUpdate(
+            { user_id: new Types.ObjectId(userId) },
+            profileData,
+            { new: true, upsert: true }
+        );
+
+        await User.findByIdAndUpdate(userId, {
+            name: profileData.name,
+            avatar_url: profileData.avatar_url
+        });
+
+        return profile;
     }
 
     static async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
-        const { data: user, error } = await supabase
-            .from('users')
-            .select('password_hash')
-            .eq('id', userId)
-            .single();
+        const user = await User.findById(userId);
+        if (!user) throw new Error('User not found');
 
-        if (error) throw new Error('User not found');
-
-        const isPasswordValid = await compare(currentPassword, user.password_hash);
+        const isPasswordValid = await user.comparePassword(currentPassword);
         if (!isPasswordValid) {
             throw new Error('Current password is incorrect');
         }
 
-        const newPasswordHash = await hash(newPassword, 12);
-
-        const { error: updateError } = await supabase
-            .from('users')
-            .update({ password_hash: newPasswordHash })
-            .eq('id', userId);
-
-        if (updateError) throw updateError;
+        user.password_hash = newPassword;
+        await user.save();
     }
 
-    static async getTwoFactorSettings(userId: string): Promise<TwoFactorSettings> {
-        return ProfileModel.getTwoFactorSettings(userId);
+    static async getTwoFactorSettings(userId: string): Promise<any> {
+        const settings = await TwoFactorSettings.findOne({ user_id: new Types.ObjectId(userId) });
+        if (!settings) {
+            const newSettings = new TwoFactorSettings({
+                user_id: new Types.ObjectId(userId),
+                enabled: false,
+                backup_codes: []
+            });
+            await newSettings.save();
+            return newSettings;
+        }
+        return settings;
     }
 
-    static async enableTwoFactor(userId: string, method: 'sms' | 'authenticator', phoneNumber?: string): Promise<TwoFactorSettings> {
-        const settings: Partial<TwoFactorSettings> = {
+    static async enableTwoFactor(userId: string, method: 'sms' | 'authenticator', phoneNumber?: string): Promise<any> {
+        const settings: any = {
             enabled: true,
             method,
             phone_number: phoneNumber || '',
@@ -56,40 +77,64 @@ export class ProfileService {
             settings.secret = this.generateSecret();
         }
 
-        return ProfileModel.updateTwoFactorSettings(userId, settings);
+        const twoFactorSettings = await TwoFactorSettings.findOneAndUpdate(
+            { user_id: new Types.ObjectId(userId) },
+            settings,
+            { new: true, upsert: true }
+        );
+        return twoFactorSettings;
     }
 
-    static async disableTwoFactor(userId: string): Promise<TwoFactorSettings> {
-        return ProfileModel.updateTwoFactorSettings(userId, {
-            enabled: false,
-            method: null,
-            phone_number: null,
-            secret: null,
-            backup_codes: []
-        });
+    static async disableTwoFactor(userId: string): Promise<any> {
+        const twoFactorSettings = await TwoFactorSettings.findOneAndUpdate(
+            { user_id: new Types.ObjectId(userId) },
+            {
+                enabled: false,
+                method: null,
+                phone_number: null,
+                secret: null,
+                backup_codes: []
+            },
+            { new: true }
+        );
+        return twoFactorSettings;
     }
 
     static async verifyPassword(userId: string, password: string): Promise<boolean> {
-        const { data: user, error } = await supabase
-            .from('users')
-            .select('password_hash')
-            .eq('id', userId)
-            .single();
-
-        if (error) throw error;
-        return compare(password, user.password_hash);
+        const user = await User.findById(userId);
+        if (!user) throw new Error('User not found');
+        return user.comparePassword(password);
     }
 
-    static async getActiveSessions(userId: string): Promise<ActiveSession[]> {
-        return ProfileModel.getActiveSessions(userId);
+    static async getActiveSessions(userId: string): Promise<any[]> {
+        return ActiveSession.find({ user_id: new Types.ObjectId(userId) })
+            .sort({ last_activity: -1 });
     }
 
-    static async terminateSession(userId: string, sessionId: string): Promise<void> {
-        return ProfileModel.terminateSession(sessionId);
+    static async createSession(userId: string, deviceInfo: string, ipAddress: string, location: string): Promise<any> {
+        const session = new ActiveSession({
+            user_id: new Types.ObjectId(userId),
+            device_info: deviceInfo,
+            ip_address: ipAddress,
+            location: location,
+            last_activity: new Date()
+        });
+        await session.save();
+        return session;
+    }
+
+    static async updateSessionActivity(sessionId: string): Promise<void> {
+        await ActiveSession.findByIdAndUpdate(sessionId, {
+            last_activity: new Date()
+        });
+    }
+
+    static async terminateSession(sessionId: string): Promise<void> {
+        await ActiveSession.findByIdAndDelete(sessionId);
     }
 
     static async terminateAllSessions(userId: string): Promise<void> {
-        return ProfileModel.terminateAllSessions(userId);
+        await ActiveSession.deleteMany({ user_id: new Types.ObjectId(userId) });
     }
 
     private static generateBackupCodes(): string[] {

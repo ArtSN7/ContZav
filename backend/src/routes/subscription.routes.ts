@@ -1,20 +1,25 @@
 import { Router } from 'express';
 import { SubscriptionController } from '../controllers/subscription.controller.js';
-import { authenticateToken } from '../middleware/auth.middleware.js';
-import { requireAdmin } from '../middleware/admin.middleware.js';
-import { validate } from '../middleware/validation.middleware.js';
-import { createSubscriptionSchema, updateSubscriptionSchema } from '../dtos/subscription.dto.js';
+import { authMiddleware } from '../middleware/auth.middleware.js';
+import { adminMiddleware } from '../middleware/admin.middleware.js';
 
 const router = Router();
 
-router.get('/plans', authenticateToken, SubscriptionController.getAllPlans);
-router.get('/plans/:planId', authenticateToken, SubscriptionController.getPlan);
-router.post('/plans', authenticateToken, requireAdmin, validate(createSubscriptionSchema), SubscriptionController.createPlan);
-router.put('/plans/:planId', authenticateToken, requireAdmin, validate(updateSubscriptionSchema), SubscriptionController.updatePlan);
-router.delete('/plans/:planId', authenticateToken, requireAdmin, SubscriptionController.deletePlan);
+// Public routes
+router.get('/plans', SubscriptionController.getAllPlans);
+router.get('/plans/:planId', SubscriptionController.getPlan);
 
-router.get('/user', authenticateToken, SubscriptionController.getUserSubscription);
-router.put('/user', authenticateToken, SubscriptionController.updateUserSubscription);
-router.delete('/user', authenticateToken, SubscriptionController.cancelSubscription);
+// User routes
+router.use(authMiddleware);
+router.get('/user', SubscriptionController.getUserSubscription);
+router.put('/user', SubscriptionController.updateUserSubscription);
+router.delete('/user', SubscriptionController.cancelSubscription);
+router.get('/limits/:feature', SubscriptionController.checkLimit);
 
-export { router as subscriptionRoutes };
+// Admin routes
+router.use(adminMiddleware);
+router.post('/plans', SubscriptionController.createPlan);
+router.put('/plans/:planId', SubscriptionController.updatePlan);
+router.delete('/plans/:planId', SubscriptionController.deletePlan);
+
+export default router;

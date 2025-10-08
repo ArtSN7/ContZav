@@ -1,49 +1,47 @@
-import { supabase } from '../services/supabase.service.js';
-import { Subscription, PaymentHistory } from '../types/profile.js';
+import { Schema, model, Document, Types } from 'mongoose';
 
-export class AccountModel {
-    static async getSubscription(userId: string): Promise<Subscription> {
-        const { data, error } = await supabase
-            .from('subscriptions')
-            .select('*')
-            .eq('user_id', userId)
-            .single();
-
-        if (error) throw error;
-        return data as Subscription;
-    }
-
-    static async updateSubscription(userId: string, plan: string): Promise<Subscription> {
-        const { data, error } = await supabase
-            .from('subscriptions')
-            .update({ plan })
-            .eq('user_id', userId)
-            .select()
-            .single();
-
-        if (error) throw error;
-        return data as Subscription;
-    }
-
-    static async getPaymentHistory(userId: string): Promise<PaymentHistory[]> {
-        const { data, error } = await supabase
-            .from('payment_history')
-            .select('*')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        return data as PaymentHistory[];
-    }
-
-    static async createPaymentRecord(userId: string, paymentData: Partial<PaymentHistory>): Promise<PaymentHistory> {
-        const { data, error } = await supabase
-            .from('payment_history')
-            .insert([{ user_id: userId, ...paymentData }])
-            .select()
-            .single();
-
-        if (error) throw error;
-        return data as PaymentHistory;
-    }
+export interface ISubscription extends Document {
+    user_id: Types.ObjectId;
+    plan: string;
+    status: 'active' | 'canceled' | 'past_due';
+    current_period_start: Date;
+    current_period_end: Date;
+    cancel_at_period_end: boolean;
+    created_at: Date;
+    updated_at: Date;
 }
+
+export interface IPaymentHistory extends Document {
+    user_id: Types.ObjectId;
+    amount: number;
+    currency: string;
+    status: 'pending' | 'succeeded' | 'failed';
+    payment_method: string;
+    stripe_payment_intent_id?: string;
+    created_at: Date;
+}
+
+const subscriptionSchema = new Schema<ISubscription>({
+    user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    plan: { type: String, required: true },
+    status: { type: String, enum: ['active', 'canceled', 'past_due'], required: true },
+    current_period_start: { type: Date, required: true },
+    current_period_end: { type: Date, required: true },
+    cancel_at_period_end: { type: Boolean, default: false }
+}, {
+    timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
+});
+
+const paymentHistorySchema = new Schema<IPaymentHistory>({
+    user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    amount: { type: Number, required: true },
+    currency: { type: String, default: 'RUB' },
+    status: { type: String, enum: ['pending', 'succeeded', 'failed'], required: true },
+    payment_method: { type: String, required: true },
+    stripe_payment_intent_id: { type: String }
+}, {
+    timestamps: { createdAt: 'created_at' }
+});
+
+export const Subscription = model<ISubscription>('Subscription', subscriptionSchema);
+export const PaymentHistory = model<IPaymentHistory>('PaymentHistory', paymentHistorySchema);

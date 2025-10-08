@@ -1,28 +1,23 @@
 import { Request, Response } from 'express';
 import { AnalyticsService } from '../services/analytics.service.js';
-import { AnalyticsFilterDto } from '../dtos/analytics.dto.js';
 
-/**
- * Контроллер для работы с аналитикой контента
- * Статистика просмотров, вовлеченности и эффективности публикаций
- */
 export class AnalyticsController {
     /**
-   * Получить аналитику для конкретного контента
-   * req - Запрос с ID контента и фильтрами по дате
-   * req.params.contentId - ID контента для анализа
-   * req.query.startDate - Начальная дата периода (необязательно)
-   * req.query.endDate - Конечная дата периода (необязательно)
-   * res - Ответ с аналитикой контента
-   * {ContentAnalytics} - Статистика просмотров, лайков, комментариев и т.д.
-   */
+     * Получить аналитику для конкретного контента
+     * @param req - Запрос с ID контента и фильтрами по дате
+     * @param req.params.contentId - ID контента для анализа
+     * @param req.query.startDate - Начальная дата периода (необязательно)
+     * @param req.query.endDate - Конечная дата периода (необязательно)
+     * @param res - Ответ с аналитикой контента
+     * @returns {Object} Статистика просмотров, лайков, комментариев и т.д.
+     */
     static async getContentAnalytics(req: Request, res: Response) {
         try {
             const { contentId } = req.params;
-            const { startDate, endDate } = req.query as AnalyticsFilterDto;
+            const { startDate, endDate } = req.query;
 
-            const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-            const end = endDate ? new Date(endDate) : new Date();
+            const start = startDate ? new Date(startDate as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+            const end = endDate ? new Date(endDate as string) : new Date();
 
             const analytics = await AnalyticsService.getContentAnalytics(contentId, start, end);
             res.json(analytics);
@@ -32,23 +27,23 @@ export class AnalyticsController {
     }
 
     /**
-   * Получить общую аналитику пользователя по всем контентам
-   * req - Запрос с фильтрами по дате и платформе
-   * req.query.startDate - Начальная дата периода анализа
-   * req.query.endDate - Конечная дата периода анализа
-   * req.query.platform - Фильтр по платформе (необязательно)
-   * res - Ответ с общей аналитикой пользователя
-   * {UserAnalytics} - Сводная статистика по всем контентам пользователя
-   */
+     * Получить общую аналитику пользователя по всем контентам
+     * @param req - Запрос с фильтрами по дате и платформе
+     * @param req.query.startDate - Начальная дата периода анализа
+     * @param req.query.endDate - Конечная дата периода анализа
+     * @param req.query.platform - Фильтр по платформе (необязательно)
+     * @param res - Ответ с общей аналитикой пользователя
+     * @returns {Object} Сводная статистика по всем контентам пользователя
+     */
     static async getUserAnalytics(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
-            const { startDate, endDate, platform } = req.query as AnalyticsFilterDto;
+            const { startDate, endDate, platform } = req.query;
 
-            const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-            const end = endDate ? new Date(endDate) : new Date();
+            const start = startDate ? new Date(startDate as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+            const end = endDate ? new Date(endDate as string) : new Date();
 
-            const analytics = await AnalyticsService.getUserAnalytics(userId, start, end, platform);
+            const analytics = await AnalyticsService.getUserAnalytics(userId, start, end, platform as string);
             res.json(analytics);
         } catch (error) {
             res.status(500).json({ error: 'Failed to fetch user analytics' });
@@ -56,22 +51,22 @@ export class AnalyticsController {
     }
 
     /**
-   * Получить топ контента пользователя по эффективности
-   * req - Запрос с фильтрами и лимитом результатов
-   * req.query.startDate - Начальная дата периода
-   * req.query.endDate - Конечная дата периода
-   * req.query.limit - Количество результатов (по умолчанию 5)
-   * res - Ответ с массивом лучшего контента
-   * {ContentAnalytics[]} - Массив контента отсортированный по эффективности
-   */
+     * Получить топ контента пользователя по эффективности
+     * @param req - Запрос с фильтрами и лимитом результатов
+     * @param req.query.startDate - Начальная дата периода
+     * @param req.query.endDate - Конечная дата периода
+     * @param req.query.limit - Количество результатов (по умолчанию 5)
+     * @param res - Ответ с массивом лучшего контента
+     * @returns {Object[]} Массив контента отсортированный по эффективности
+     */
     static async getTopContent(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
-            const { startDate, endDate, limit } = req.query as AnalyticsFilterDto & { limit?: number };
+            const { startDate, endDate, limit } = req.query;
 
-            const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-            const end = endDate ? new Date(endDate) : new Date();
-            const contentLimit = limit || 5;
+            const start = startDate ? new Date(startDate as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+            const end = endDate ? new Date(endDate as string) : new Date();
+            const contentLimit = limit ? parseInt(limit as string) : 5;
 
             const topContent = await AnalyticsService.getTopContent(userId, start, end, contentLimit);
             res.json(topContent);
@@ -81,20 +76,20 @@ export class AnalyticsController {
     }
 
     /**
-   * Сравнить эффективность контента на разных платформах
-   * req - Запрос с периодом для сравнения
-   * req.query.startDate - Начальная дата периода
-   * req.query.endDate - Конечная дата периода
-   * res - Ответ со сравнением платформ
-   * {Object} - Сравнительная аналитика по платформам
-   */
+     * Сравнить эффективность контента на разных платформах
+     * @param req - Запрос с периодом для сравнения
+     * @param req.query.startDate - Начальная дата периода
+     * @param req.query.endDate - Конечная дата периода
+     * @param res - Ответ со сравнением платформ
+     * @returns {Object} Сравнительная аналитика по платформам
+     */
     static async getPlatformComparison(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
-            const { startDate, endDate } = req.query as AnalyticsFilterDto;
+            const { startDate, endDate } = req.query;
 
-            const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-            const end = endDate ? new Date(endDate) : new Date();
+            const start = startDate ? new Date(startDate as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+            const end = endDate ? new Date(endDate as string) : new Date();
 
             const comparison = await AnalyticsService.getPlatformComparison(userId, start, end);
             res.json(comparison);
@@ -104,24 +99,24 @@ export class AnalyticsController {
     }
 
     /**
-   * Экспортировать аналитику в CSV или JSON формате
-   * req - Запрос с параметрами экспорта
-   * req.query.startDate - Начальная дата периода
-   * req.query.endDate - Конечная дата периода
-   * req.query.platform - Фильтр по платформе
-   * req.query.format - Формат экспорта: 'csv' или 'json'
-   * res - Ответ с файлом экспорта или JSON данными
-   * {Buffer|Object} - CSV файл или JSON данные аналитики
-   */
+     * Экспортировать аналитику в CSV или JSON формате
+     * @param req - Запрос с параметрами экспорта
+     * @param req.query.startDate - Начальная дата периода
+     * @param req.query.endDate - Конечная дата периода
+     * @param req.query.platform - Фильтр по платформе
+     * @param req.query.format - Формат экспорта: 'csv' или 'json'
+     * @param res - Ответ с файлом экспорта или JSON данными
+     * @returns {Buffer|Object} CSV файл или JSON данные аналитики
+     */
     static async exportAnalytics(req: Request, res: Response) {
         try {
             const userId = req.user!.id;
-            const { startDate, endDate, platform, format } = req.query as AnalyticsFilterDto & { format: 'csv' | 'json' };
+            const { startDate, endDate, platform, format } = req.query;
 
-            const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-            const end = endDate ? new Date(endDate) : new Date();
+            const start = startDate ? new Date(startDate as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+            const end = endDate ? new Date(endDate as string) : new Date();
 
-            const analytics = await AnalyticsService.getUserAnalytics(userId, start, end, platform);
+            const analytics = await AnalyticsService.getUserAnalytics(userId, start, end, platform as string);
 
             if (format === 'csv') {
                 res.setHeader('Content-Type', 'text/csv');
@@ -138,15 +133,39 @@ export class AnalyticsController {
     }
 
     /**
-  * Вспомогательный метод для конвертации объекта в CSV строку
-  * data - Объект данных для конвертации
-  * {string} - CSV строка с заголовками и значениями
-  */
+     * Получить статистику по подписчикам и публикациям
+     * @param req - Запрос с периодом для статистики
+     * @param req.query.startDate - Начальная дата периода
+     * @param req.query.endDate - Конечная дата периода
+     * @param req.query.platform - Фильтр по платформе
+     * @param res - Ответ со статистикой
+     * @returns {Object[]} Статистика по подписчикам и публикациям
+     */
+    static async getStatistics(req: Request, res: Response) {
+        try {
+            const userId = req.user!.id;
+            const { startDate, endDate, platform } = req.query;
+
+            const start = startDate ? new Date(startDate as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+            const end = endDate ? new Date(endDate as string) : new Date();
+
+            const statistics = await AnalyticsService.getStatistics(userId, start, end, platform as string);
+            res.json(statistics);
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to fetch statistics' });
+        }
+    }
+
+    /**
+     * Вспомогательный метод для конвертации объекта в CSV строку
+     * @param data - Объект данных для конвертации
+     * @returns {string} CSV строка с заголовками и значениями
+     */
     private static convertToCSV(data: any): string {
         const flattenObject = (obj: any, prefix = ''): any => {
             return Object.keys(obj).reduce((acc, key) => {
                 const pre = prefix.length ? prefix + '.' : '';
-                if (typeof obj[key] === 'object' && obj[key] !== null) {
+                if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
                     Object.assign(acc, flattenObject(obj[key], pre + key));
                 } else {
                     acc[pre + key] = obj[key];

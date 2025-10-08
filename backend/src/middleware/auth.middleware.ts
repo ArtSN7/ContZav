@@ -1,38 +1,24 @@
 import { Request, Response, NextFunction } from 'express';
-import { supabase } from '../services/supabase.service.js';
-import { AppError } from '../exceptions/AppError.js';
+import { TokenService } from '../services/token.service.js';
 
-export const authenticateToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
     try {
         const authHeader = req.headers.authorization;
-
-        if (!authHeader) {
-            throw new AppError('Missing authentication token', 401);
-        }
-
-        if (!authHeader.startsWith('Bearer ')) {
-            throw new AppError('Invalid authentication format', 401);
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ error: 'Access token required' });
         }
 
         const token = authHeader.substring(7);
+        const payload = TokenService.verifyToken(token);
 
-        if (!token) {
-            throw new AppError('Empty authentication token', 401);
-        }
+        req.user = {
+            id: payload.sub,
+            email: payload.email,
+            role: payload.role || 'user'
+        };
 
-        const { data: { user }, error } = await supabase.auth.getUser(token);
-
-        if (error) {
-            throw new AppError('Invalid authentication token', 401);
-        }
-
-        if (!user) {
-            throw new AppError('User not found', 401);
-        }
-
-        req.user = user;
         next();
     } catch (error) {
-        next(error);
+        res.status(401).json({ error: 'Invalid token' });
     }
 };

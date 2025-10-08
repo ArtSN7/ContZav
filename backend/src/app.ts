@@ -7,8 +7,11 @@ import { appRoutes } from './routes/index.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import { apiLimiter } from './middleware/rateLimit.middleware.js';
 import { logger } from './utils/logger.js';
+import { DatabaseService } from './services/database.service.js';
 
 const app = express();
+
+DatabaseService.connect().catch(console.error);
 
 app.use(helmet());
 app.use(trackSession);

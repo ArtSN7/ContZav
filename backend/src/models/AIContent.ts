@@ -1,72 +1,38 @@
-import { supabase } from '../services/supabase.service.js';
-import { AIContent } from '../types/ai';
+import { Schema, model, Document, Types } from 'mongoose';
 
-export class AIContentModel {
-    static async create(contentData: Partial<AIContent>): Promise<AIContent> {
-        const { data, error } = await supabase
-            .from('ai_content')
-            .insert([contentData])
-            .select()
-            .single();
-
-        if (error) throw error;
-        return data as AIContent;
-    }
-
-    static async findById(contentId: string): Promise<AIContent> {
-        const { data, error } = await supabase
-            .from('ai_content')
-            .select('*')
-            .eq('id', contentId)
-            .single();
-
-        if (error) throw error;
-        return data as AIContent;
-    }
-
-    static async findByUserId(userId: string): Promise<AIContent[]> {
-        const { data, error } = await supabase
-            .from('ai_content')
-            .select('*')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        return data as AIContent[];
-    }
-
-    static async update(contentId: string, contentData: Partial<AIContent>): Promise<AIContent> {
-        const { data, error } = await supabase
-            .from('ai_content')
-            .update(contentData)
-            .eq('id', contentId)
-            .select()
-            .single();
-
-        if (error) throw error;
-        return data as AIContent;
-    }
-
-    static async updateStatus(contentId: string, status: AIContent['status']): Promise<AIContent> {
-        return this.update(contentId, { status });
-    }
-
-    static async addFeedback(contentId: string, feedback: string): Promise<AIContent> {
-        return this.update(contentId, { feedback });
-    }
-
-    static async scheduleContent(contentId: string, platforms: string[], scheduleDate: Date): Promise<AIContent> {
-        return this.update(contentId, {
-            platforms,
-            schedule_date: scheduleDate,
-            status: 'scheduled'
-        });
-    }
-
-    static async markAsPublished(contentId: string, publishDate: Date): Promise<AIContent> {
-        return this.update(contentId, {
-            publish_date: publishDate,
-            status: 'published'
-        });
-    }
+export interface IAIContent extends Document {
+    user_id: Types.ObjectId;
+    title: string;
+    content: string;
+    content_type: 'post' | 'story' | 'reels' | 'video';
+    platform: 'instagram' | 'tiktok' | 'youtube' | 'vk';
+    status: 'draft' | 'scheduled' | 'published' | 'failed';
+    schedule_date?: Date;
+    publish_date?: Date;
+    platforms: string[];
+    feedback?: string;
+    ai_generation_request_id: Types.ObjectId;
+    created_at: Date;
+    updated_at: Date;
 }
+
+const aiContentSchema = new Schema<IAIContent>({
+    user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    title: { type: String, required: true },
+    content: { type: String, required: true },
+    content_type: { type: String, enum: ['post', 'story', 'reels', 'video'], required: true },
+    platform: { type: String, enum: ['instagram', 'tiktok', 'youtube', 'vk'], required: true },
+    status: { type: String, enum: ['draft', 'scheduled', 'published', 'failed'], default: 'draft' },
+    schedule_date: { type: Date },
+    publish_date: { type: Date },
+    platforms: [{ type: String }],
+    feedback: { type: String },
+    ai_generation_request_id: { type: Schema.Types.ObjectId, ref: 'AIGenerationRequest', required: true }
+}, {
+    timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
+});
+
+aiContentSchema.index({ user_id: 1, created_at: -1 });
+aiContentSchema.index({ status: 1, schedule_date: 1 });
+
+export const AIContent = model<IAIContent>('AIContent', aiContentSchema);

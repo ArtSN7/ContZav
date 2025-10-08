@@ -1,54 +1,48 @@
-import { supabase } from '../services/supabase.service.js';
-import { AIGenerationRequest } from '../types/ai.js';
+import { Schema, model, Document, Types } from 'mongoose';
 
-export class AIGenerationModel {
-    static async create(requestData: Partial<AIGenerationRequest>): Promise<AIGenerationRequest> {
-        const { data, error } = await supabase
-            .from('ai_generation_requests')
-            .insert([requestData])
-            .select()
-            .single();
-
-        if (error) throw error;
-        return data as AIGenerationRequest;
-    }
-
-    static async findById(requestId: string): Promise<AIGenerationRequest> {
-        const { data, error } = await supabase
-            .from('ai_generation_requests')
-            .select('*')
-            .eq('id', requestId)
-            .single();
-
-        if (error) throw error;
-        return data as AIGenerationRequest;
-    }
-
-    static async updateStatus(requestId: string, status: AIGenerationRequest['status'], result?: any, errorMessage?: string): Promise<AIGenerationRequest> {
-        const { data, error } = await supabase
-            .from('ai_generation_requests')
-            .update({
-                status,
-                result: result || null,
-                error: errorMessage || null,
-                updated_at: new Date()
-            })
-            .eq('id', requestId)
-            .select()
-            .single();
-
-        if (error) throw error;
-        return data as AIGenerationRequest;
-    }
-
-    static async findByUserId(userId: string): Promise<AIGenerationRequest[]> {
-        const { data, error } = await supabase
-            .from('ai_generation_requests')
-            .select('*')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        return data as AIGenerationRequest[];
-    }
+export interface IAIGenerationRequest extends Document {
+    user_id: Types.ObjectId;
+    prompt: string;
+    parameters: {
+        tone?: string;
+        style?: string;
+        length?: number;
+        target_audience?: string;
+        keywords?: string[];
+        contentType?: string;
+        questions?: string[];
+        contentId?: string;
+        feedback?: string;
+    };
+    status: 'pending' | 'processing' | 'completed' | 'failed';
+    result?: any;
+    error?: string;
+    created_at: Date;
+    updated_at: Date;
 }
+
+const aiGenerationRequestSchema = new Schema<IAIGenerationRequest>({
+    user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    prompt: { type: String, required: true },
+    parameters: {
+        tone: { type: String },
+        style: { type: String },
+        length: { type: Number },
+        target_audience: { type: String },
+        keywords: [{ type: String }],
+        contentType: { type: String },
+        questions: [{ type: String }],
+        contentId: { type: String },
+        feedback: { type: String }
+    },
+    status: { type: String, enum: ['pending', 'processing', 'completed', 'failed'], default: 'pending' },
+    result: { type: Schema.Types.Mixed },
+    error: { type: String }
+}, {
+    timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
+});
+
+aiGenerationRequestSchema.index({ user_id: 1, created_at: -1 });
+aiGenerationRequestSchema.index({ status: 1 });
+
+export const AIGenerationRequest = model<IAIGenerationRequest>('AIGenerationRequest', aiGenerationRequestSchema);

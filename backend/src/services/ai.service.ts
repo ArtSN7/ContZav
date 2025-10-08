@@ -1,25 +1,22 @@
-import { AIContentModel } from '../models/AIContent.js';
-import { AIGenerationModel } from '../models/AIGeneration.js';
-import { n8nService } from './n8n.service.js';
+import { AIContent } from '../models/AIContent.js';
+import { AIGenerationRequest } from '../models/AIGeneration.js';
+import { N8nService } from './n8n.service.js';
 import { MockAiService } from './mockAiService.js';
 import { GenerateNicheDto, GenerateQuestionsDto, GenerateContentDto } from '../dtos/ai.dto.js';
+import { Types } from 'mongoose';
 
-/**
- * Сервис для работы с AI-генерацией контента
- * От создания вопросов до готовых видео и текстов
- */
 export class AIService {
     static async generateNicheQuestions(userId: string, dto: GenerateNicheDto): Promise<string[]> {
-        const request = await AIGenerationModel.create({
-            user_id: userId,
-            type: 'questions',
+        const request = new AIGenerationRequest({
+            user_id: new Types.ObjectId(userId),
             prompt: dto.niche,
             parameters: { contentType: dto.contentType },
             status: 'pending'
         });
+        await request.save();
 
-        await n8nService.triggerWorkflow('generate-niche-questions', {
-            requestId: request.id,
+        await N8nService.triggerWorkflow('generate-niche-questions', {
+            requestId: request._id.toString(),
             niche: dto.niche,
             contentType: dto.contentType,
             userId
@@ -33,29 +30,32 @@ export class AIService {
     }
 
     static async generateContentScript(userId: string, dto: GenerateQuestionsDto): Promise<any> {
-        const content = await AIContentModel.create({
-            user_id: userId,
-            niche: dto.niche,
+        const content = new AIContent({
+            user_id: new Types.ObjectId(userId),
+            title: dto.niche,
+            content: '',
             content_type: dto.contentType,
+            platform: 'instagram',
             selected_questions: dto.selectedQuestions || [],
             status: 'generating'
         });
+        await content.save();
 
-        const request = await AIGenerationModel.create({
-            user_id: userId,
-            type: 'content',
+        const request = new AIGenerationRequest({
+            user_id: new Types.ObjectId(userId),
             prompt: dto.niche,
             parameters: {
                 contentType: dto.contentType,
                 questions: dto.selectedQuestions,
-                contentId: content.id
+                contentId: content._id.toString()
             },
             status: 'pending'
         });
+        await request.save();
 
-        await n8nService.triggerWorkflow('generate-content-script', {
-            requestId: request.id,
-            contentId: content.id,
+        await N8nService.triggerWorkflow('generate-content-script', {
+            requestId: request._id.toString(),
+            contentId: content._id.toString(),
             niche: dto.niche,
             contentType: dto.contentType,
             questions: dto.selectedQuestions,
@@ -68,75 +68,93 @@ export class AIService {
     static async generateContentScriptMock(userId: string, dto: GenerateQuestionsDto): Promise<any> {
         const content = await MockAiService.generateContent(dto.niche, dto.contentType, dto.selectedQuestions || []);
 
-        const savedContent = await AIContentModel.create({
-            user_id: userId,
-            niche: dto.niche,
+        const savedContent = new AIContent({
+            user_id: new Types.ObjectId(userId),
+            title: dto.niche,
+            content: content.script,
             content_type: dto.contentType,
+            platform: 'instagram',
             selected_questions: dto.selectedQuestions || [],
-            script: content.script,
             video_url: content.videoUrl,
             status: 'ready'
         });
+        await savedContent.save();
 
         return savedContent;
     }
 
     static async generateVideo(contentId: string): Promise<void> {
-        const content = await AIContentModel.findById(contentId);
+        const content = await AIContent.findById(contentId);
+        if (!content) throw new Error('Content not found');
 
-        const request = await AIGenerationModel.create({
+        const request = new AIGenerationRequest({
             user_id: content.user_id,
-            type: 'video',
-            prompt: content.script,
-            parameters: { contentId },
+            prompt: content.content,
+            parameters: { contentId: content._id.toString() },
             status: 'pending'
         });
+        await request.save();
 
-        await n8nService.triggerWorkflow('generate-video', {
-            requestId: request.id,
-            contentId,
-            script: content.script,
-            style: content.style,
-            tone: content.tone,
-            userId: content.user_id
+        await N8nService.triggerWorkflow('generate-video', {
+            requestId: request._id.toString(),
+            contentId: content._id.toString(),
+            script: content.content,
+            userId: content.user_id.toString()
         });
     }
 
     static async generateVideoMock(contentId: string): Promise<void> {
-        const content = await AIContentModel.findById(contentId);
-        const mockVideo = await MockAiService.generateVideoContent(content.script);
+        const content = await AIContent.findById(contentId);
+        if (!content) throw new Error('Content not found');
 
-        await AIContentModel.update(contentId, {
+        const mockVideo = await MockAiService.generateVideoContent(content.content);
+
+        await AIContent.findByIdAndUpdate(contentId, {
             video_url: mockVideo.videoUrl,
             status: 'ready'
         });
     }
 
     static async handleGenerationResult(requestId: string, result: any, error?: string): Promise<void> {
-        const request = await AIGenerationModel.findById(requestId);
+        const request = await AIGenerationRequest.findById(requestId);
+        if (!request) throw new Error('Request not found');
 
         if (error) {
-            await AIGenerationModel.updateStatus(requestId, 'failed', null, error);
+            await AIGenerationRequest.findByIdAndUpdate(requestId, {
+                status: 'failed',
+                error: error,
+                updated_at: new Date()
+            });
             return;
         }
 
-        await AIGenerationModel.updateStatus(requestId, 'completed', result);
+        await AIGenerationRequest.findByIdAndUpdate(requestId, {
+            status: 'completed',
+            result: result,
+            updated_at: new Date()
+        });
 
-        if (request.type === 'content' && request.parameters.contentId) {
-            const content = await AIContentModel.update(request.parameters.contentId, {
-                script: result.script,
-                text_content: result.textContent,
-                status: 'ready'
-            });
+        // Исправляем доступ к parameters
+        const parameters = request.parameters as any;
+        if (parameters?.contentId) {
+            const content = await AIContent.findById(parameters.contentId);
+            if (content) {
+                if (request.prompt.includes('content')) {
+                    await AIContent.findByIdAndUpdate(parameters.contentId, {
+                        content: result.script,
+                        status: 'ready'
+                    });
 
-            if (content.content_type !== 'text') {
-                await this.generateVideo(content.id);
+                    if (content.content_type !== 'text') {
+                        await this.generateVideo(content._id.toString());
+                    }
+                } else if (request.prompt.includes('video')) {
+                    await AIContent.findByIdAndUpdate(parameters.contentId, {
+                        video_url: result.videoUrl,
+                        status: 'ready'
+                    });
+                }
             }
-        } else if (request.type === 'video' && request.parameters.contentId) {
-            await AIContentModel.update(request.parameters.contentId, {
-                video_url: result.videoUrl,
-                status: 'ready'
-            });
         }
     }
 
@@ -148,56 +166,82 @@ export class AIService {
             updateData.feedback = feedback;
         }
 
-        return AIContentModel.update(contentId, updateData);
+        return AIContent.findByIdAndUpdate(contentId, updateData, { new: true });
     }
 
     static async regenerateContent(contentId: string): Promise<void> {
-        const content = await AIContentModel.updateStatus(contentId, 'generating');
+        const content = await AIContent.findByIdAndUpdate(contentId, { status: 'generating' }, { new: true });
+        if (!content) throw new Error('Content not found');
 
-        const request = await AIGenerationModel.create({
+        const contentObj = content.toObject();
+        const request = new AIGenerationRequest({
             user_id: content.user_id,
-            type: 'content',
-            prompt: content.niche,
+            prompt: content.title,
             parameters: {
                 contentType: content.content_type,
                 questions: content.selected_questions,
-                contentId: content.id,
+                contentId: content._id.toString(),
                 feedback: content.feedback
             },
             status: 'pending'
         });
+        await request.save();
 
-        await n8nService.triggerWorkflow('regenerate-content', {
-            requestId: request.id,
-            contentId: content.id,
-            niche: content.niche,
+        await N8nService.triggerWorkflow('regenerate-content', {
+            requestId: request._id.toString(),
+            contentId: content._id.toString(),
+            niche: content.title,
             contentType: content.content_type,
             questions: content.selected_questions,
             feedback: content.feedback,
-            userId: content.user_id
+            userId: content.user_id.toString()
         });
     }
 
     static async regenerateContentMock(contentId: string): Promise<void> {
-        const content = await AIContentModel.findById(contentId);
-        const newContent = await MockAiService.generateContent(content.niche, content.content_type, content.selected_questions);
+        const content = await AIContent.findById(contentId);
+        if (!content) throw new Error('Content not found');
 
-        await AIContentModel.update(contentId, {
-            script: newContent.script,
+        const contentObj = content.toObject();
+        const newContent = await MockAiService.generateContent(content.title, content.content_type, content.selected_questions);
+
+        await AIContent.findByIdAndUpdate(contentId, {
+            content: newContent.script,
             video_url: newContent.videoUrl,
             status: 'ready'
         });
     }
 
     static async scheduleContent(contentId: string, platforms: string[], scheduleDate: Date): Promise<any> {
-        return AIContentModel.scheduleContent(contentId, platforms, scheduleDate);
-    }
-
-    static async scheduleContentMock(contentId: string, platforms: string[], scheduleDate: Date): Promise<any> {
-        return AIContentModel.update(contentId, {
+        return AIContent.findByIdAndUpdate(contentId, {
             platforms,
             schedule_date: scheduleDate,
             status: 'scheduled'
-        });
+        }, { new: true });
+    }
+
+    static async scheduleContentMock(contentId: string, platforms: string[], scheduleDate: Date): Promise<any> {
+        const content = await AIContent.findByIdAndUpdate(
+            contentId,
+            {
+                platforms,
+                schedule_date: scheduleDate,
+                status: 'scheduled'
+            },
+            { new: true }
+        );
+        if (!content) throw new Error('Content not found');
+        return content;
+    }
+
+    static async getUserAIContent(userId: string): Promise<any[]> {
+        return AIContent.find({ user_id: new Types.ObjectId(userId) })
+            .sort({ created_at: -1 });
+    }
+
+    static async getAIContentById(contentId: string): Promise<any> {
+        const content = await AIContent.findById(contentId);
+        if (!content) throw new Error('Content not found');
+        return content;
     }
 }

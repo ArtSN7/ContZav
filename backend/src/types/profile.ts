@@ -1,5 +1,7 @@
-export interface UserProfile {
-    id: string;
+import { Document, Types } from 'mongoose';
+
+export interface IUserProfile extends Document {
+    user_id: Types.ObjectId;
     email: string;
     name: string;
     surname: string;
@@ -13,9 +15,8 @@ export interface UserProfile {
     updated_at: Date;
 }
 
-export interface TwoFactorSettings {
-    id: string;
-    user_id: string;
+export interface ITwoFactorSettings extends Document {
+    user_id: Types.ObjectId;
     enabled: boolean;
     method: 'sms' | 'authenticator';
     phone_number: string;
@@ -25,9 +26,8 @@ export interface TwoFactorSettings {
     updated_at: Date;
 }
 
-export interface ActiveSession {
-    id: string;
-    user_id: string;
+export interface IActiveSession extends Document {
+    user_id: Types.ObjectId;
     device_info: string;
     ip_address: string;
     location: string;
@@ -35,9 +35,8 @@ export interface ActiveSession {
     created_at: Date;
 }
 
-export interface Subscription {
-    id: string;
-    user_id: string;
+export interface ISubscription extends Document {
+    user_id: Types.ObjectId;
     plan: 'free' | 'pro' | 'enterprise';
     status: 'active' | 'canceled' | 'expired';
     monthly_limit: number;
@@ -51,9 +50,8 @@ export interface Subscription {
     updated_at: Date;
 }
 
-export interface PaymentHistory {
-    id: string;
-    user_id: string;
+export interface IPaymentHistory extends Document {
+    user_id: Types.ObjectId;
     amount: number;
     currency: string;
     status: 'completed' | 'pending' | 'failed';
