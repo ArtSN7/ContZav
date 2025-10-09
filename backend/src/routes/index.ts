@@ -7,8 +7,11 @@ import analyticsRoutes from './analytics.routes.js';
 import aiRoutes from './ai.routes.js';
 import contentRoutes from './content.routes.js';
 import webhookRoutes from './webhook.routes.js';
+import { requestLoggerMiddleware } from '@/middleware/request-logger.middleware.js';
 
 const router = Router();
+
+router.use(requestLoggerMiddleware);
 
 router.use('/auth', authRoutes);
 router.use('/account', accountRoutes);

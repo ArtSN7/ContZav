@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import { AuthController } from '../controllers/auth.controller.js';
-import { authMiddleware } from '../middleware/auth.middleware.js';
 
 const router = Router();
 
@@ -8,8 +7,6 @@ router.post('/login', AuthController.login);
 router.post('/register', AuthController.register);
 router.post('/refresh', AuthController.refreshToken);
 router.get('/profile/mock', AuthController.getProfileMock);
-
-router.use(authMiddleware);
 
 router.get('/profile', AuthController.getProfile);
 router.post('/logout', AuthController.logout);
