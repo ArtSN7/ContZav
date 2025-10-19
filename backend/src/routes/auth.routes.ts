@@ -8,7 +8,6 @@ router.post('/register', AuthController.register);
 router.post('/refresh', AuthController.refreshToken);
 router.get('/profile/mock', AuthController.getProfileMock);
 
-router.get('/profile', AuthController.getProfile);
 router.post('/logout', AuthController.logout);
 router.get('/google', AuthController.googleAuth);
 router.get('/google/callback', AuthController.googleCallback);

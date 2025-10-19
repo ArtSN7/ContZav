@@ -17,6 +17,7 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
         }
 
         const token = authHeader.substring(7);
+        console.log({ token });
         const payload = TokenService.verifyToken(token);
 
         req.user = {
