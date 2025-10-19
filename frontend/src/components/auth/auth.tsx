@@ -20,23 +20,17 @@ import { TermsAndPrivacy } from "@/components/utils_for_components/TermsAndCondi
 import AppleLogo from "../../utils/icons/AppleLogo.png";
 import GoogleLogo from "../../utils/icons/GoogleLogo.png";
 import VKLogo from "../../utils/icons/VKLogo.png";
-import { useNavigate } from "react-router";
-import { DASHBOARD_ROUTE } from "@/utils/CONSTANTS.ts";
-import { useEffect, useState } from "react";
-import { setAuthToken } from "@/utils/auth.ts";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function AuthPage() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const navigate = useNavigate();
+  const { loading, error, clearError } = useAuth();
 
   const VK_AUTH = "vk";
   const GOOGLE_AUTH = "google";
   const APPLE_AUTH = "apple";
 
   const handleSocialAuth = async (provider: string) => {
-    setLoading(true);
-    setError("");
+    clearError();
 
     try {
       const response = await fetch(
@@ -54,31 +48,10 @@ export function AuthPage() {
       } else {
         throw new Error("Invalid response from server");
       }
-    } catch (err:any) {
-      setError(err.message || "Authentication failed");
+    } catch (err: any) {
       console.error("Auth error:", err);
-    } finally {
-      setLoading(false);
     }
   };
-
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const error = urlParams.get("error");
-    const authStatus = urlParams.get("auth");
-    const accessToken = urlParams.get("accessToken");
-
-    if (error) {
-      setError(error);
-      return;
-    }
-
-    if (authStatus === "success" && accessToken) {
-      setAuthToken(accessToken);
-      window.history.replaceState({}, document.title, window.location.pathname);
-      navigate(DASHBOARD_ROUTE);
-    }
-  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center p-4">
@@ -93,14 +66,21 @@ export function AuthPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {error && (
+              <div className="p-3 text-sm text-red-500 bg-red-50 border border-red-200 rounded-md">
+                {error}
+              </div>
+            )}
+
             <div className="space-y-3">
               <Button
                 variant="outline"
                 className="w-full h-12 text-left justify-start space-x-3 bg-transparent"
                 onClick={() => handleSocialAuth(GOOGLE_AUTH)}
+                disabled={loading}
               >
                 <div className="w-5 h-5 rounded-full flex items-center justify-center">
-                  <img src={GoogleLogo} />
+                  <img src={GoogleLogo} alt="Google" />
                 </div>
                 <span>Продолжить с Google</span>
               </Button>
@@ -109,9 +89,10 @@ export function AuthPage() {
                 variant="outline"
                 className="w-full h-12 text-left justify-start space-x-3 bg-transparent"
                 onClick={() => handleSocialAuth(VK_AUTH)}
+                disabled={loading}
               >
                 <div className="w-5 h-5 rounded-full flex items-center justify-center">
-                  <img src={VKLogo} />
+                  <img src={VKLogo} alt="VK" />
                 </div>
                 <span>Продолжить с ВКонтакте</span>
               </Button>
@@ -120,9 +101,10 @@ export function AuthPage() {
                 variant="outline"
                 className="w-full h-12 text-left justify-start space-x-3 bg-transparent"
                 onClick={() => handleSocialAuth(APPLE_AUTH)}
+                disabled={loading}
               >
                 <div className="w-5 h-5 rounded-full flex items-center justify-center">
-                  <img src={AppleLogo} />
+                  <img src={AppleLogo} alt="Apple" />
                 </div>
                 <span>Продолжить с Apple</span>
               </Button>
@@ -136,7 +118,6 @@ export function AuthPage() {
                 <DialogTrigger className="text-accent hover:underline">
                   Условиями использования{" "}
                 </DialogTrigger>
-
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Условия</DialogTitle>

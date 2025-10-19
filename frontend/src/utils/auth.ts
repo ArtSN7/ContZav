@@ -3,7 +3,24 @@ export const getAuthToken = (): string | null => {
 };
 
 export const setAuthToken = (accessToken: string): void => {
-    localStorage.setItem('auth_token', accessToken);
+    console.log('🔄 Setting auth token:', {
+        token: accessToken?.substring(0, 20) + '...',
+        length: accessToken?.length,
+        timestamp: new Date().toISOString()
+    });
+
+    try {
+        localStorage.setItem('auth_token', accessToken);
+
+        const savedToken = localStorage.getItem('auth_token');
+        console.log('✅ Token saved to localStorage:', {
+            saved: !!savedToken,
+            length: savedToken?.length,
+            match: savedToken === accessToken
+        });
+    } catch (error) {
+        console.error('❌ Failed to save token to localStorage:', error);
+    }
 };
 
 export const clearAuthToken = (): void => {

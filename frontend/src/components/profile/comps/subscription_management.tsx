@@ -53,7 +53,7 @@ export function SubscriptionManagement() {
   const fetchSubscriptionData = async () => {
     try {
       const token = getAuthToken();
-      const response = await fetch("http://localhost:5090/api/auth/profile", {
+      const response = await fetch("http://localhost:5090/api/profile", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
