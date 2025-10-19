@@ -19,6 +19,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { getAuthToken } from "@/utils/auth";
+import { Loader } from "@/components/loader/loader";
 
 interface SocialAccount {
   provider: string;
@@ -78,7 +79,7 @@ export function ConnectedAccounts() {
     );
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <Loader />;
 
   const connectedCount = accounts.filter((account) => account.connected).length;
   const accountIcons: { [key: string]: string } = {

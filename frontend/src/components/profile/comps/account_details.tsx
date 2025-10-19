@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Camera, Save, User } from "lucide-react";
 import { getAuthToken } from "@/utils/auth";
+import { Loader } from "@/components/loader/loader";
 
 interface ProfileData {
   id: string;
@@ -102,7 +103,7 @@ export function AccountDetails() {
     setProfileData((prev) => (prev ? { ...prev, [field]: value } : null));
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <Loader />;
   if (!profileData) return <div>Error loading profile</div>;
 
   return (
