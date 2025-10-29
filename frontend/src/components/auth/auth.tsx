@@ -17,9 +17,9 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { LogoAndBrandComponent } from "@/components/utils_for_components/logo_brand_component.tsx";
 import { TermsAndPrivacy } from "@/components/utils_for_components/TermsAndConditions.tsx";
-import AppleLogo from "../../utils/icons/AppleLogo.png";
 import GoogleLogo from "../../utils/icons/GoogleLogo.png";
 import VKLogo from "../../utils/icons/VKLogo.png";
+import YandexLogo from "../../utils/icons/YandexLogo.png";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function AuthPage() {
@@ -27,7 +27,7 @@ export function AuthPage() {
 
   const VK_AUTH = "vk";
   const GOOGLE_AUTH = "google";
-  const APPLE_AUTH = "apple";
+  const YANDEX_AUTH = "yandex";
 
   const handleSocialAuth = async (provider: string) => {
     clearError();
@@ -100,13 +100,13 @@ export function AuthPage() {
               <Button
                 variant="outline"
                 className="w-full h-12 text-left justify-start space-x-3 bg-transparent"
-                onClick={() => handleSocialAuth(APPLE_AUTH)}
+                onClick={() => handleSocialAuth(YANDEX_AUTH)}
                 disabled={loading}
               >
                 <div className="w-5 h-5 rounded-full flex items-center justify-center">
-                  <img src={AppleLogo} alt="Apple" />
+                  <img src={YandexLogo} alt="Yandex" />
                 </div>
-                <span>Продолжить с Apple</span>
+                <span>Продолжить с Яндекс</span>
               </Button>
             </div>
 
