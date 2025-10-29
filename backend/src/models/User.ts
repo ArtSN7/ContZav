@@ -2,6 +2,7 @@ import { Schema, model, Document, Types } from 'mongoose';
 import { hash, compare } from 'bcryptjs';
 
 export interface IAuthUser extends Document {
+    _id: Types.ObjectId;
     email: string;
     password_hash: string;
     name: string;
@@ -11,13 +12,12 @@ export interface IAuthUser extends Document {
     last_login?: Date;
     created_at: Date;
     updated_at: Date;
-
     comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
 export interface ISocialAccount extends Document {
     user_id: Types.ObjectId;
-    platform: 'google' | 'vkontakte' | 'yandex' | 'youtube' | 'instagram' | 'tiktok';
+    platform: 'google' | 'vkontakte' | 'yandex' | 'youtube' | 'instagram' | 'tiktok' | 'telegram' | 'facebook';
     platform_user_id: string;
     email: string;
     username?: string;
@@ -25,6 +25,10 @@ export interface ISocialAccount extends Document {
     refresh_token?: string;
     expires_at?: Date;
     profile_data: any;
+    followers?: number;
+    last_sync?: Date;
+    is_connected: boolean;
+    settings?: any;
     created_at: Date;
     updated_at: Date;
 }
@@ -43,14 +47,18 @@ const authUserSchema = new Schema<IAuthUser>({
 
 const socialAccountSchema = new Schema<ISocialAccount>({
     user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    platform: { type: String, enum: ['google', 'vkontakte', 'yandex', 'youtube', 'instagram', 'tiktok'], required: true },
+    platform: { type: String, enum: ['google', 'vkontakte', 'yandex', 'youtube', 'instagram', 'tiktok', 'telegram', 'facebook'], required: true },
     platform_user_id: { type: String, required: true },
     email: { type: String, required: true },
     username: { type: String },
     access_token: { type: String, required: true },
     refresh_token: { type: String },
     expires_at: { type: Date },
-    profile_data: { type: Schema.Types.Mixed }
+    profile_data: { type: Schema.Types.Mixed },
+    followers: { type: Number },
+    last_sync: { type: Date },
+    is_connected: { type: Boolean, default: false },
+    settings: { type: Schema.Types.Mixed }
 }, {
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
 });

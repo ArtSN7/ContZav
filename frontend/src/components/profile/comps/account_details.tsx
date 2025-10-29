@@ -37,11 +37,14 @@ export function AccountDetails() {
   const fetchProfileData = async () => {
     try {
       const token = getAuthToken();
-      const response = await fetch("http://localhost:5090/api/profile", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        "http://localhost:5090/api/account/profile",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!response.ok) throw new Error("Failed to fetch profile");
 
@@ -82,14 +85,17 @@ export function AccountDetails() {
       const token = getAuthToken();
       const backendData = transformFrontendToBackend(profileData);
 
-      const response = await fetch("http://localhost:5090/api/profile", {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(backendData),
-      });
+      const response = await fetch(
+        "http://localhost:5090/api/account/profile",
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(backendData),
+        }
+      );
 
       if (!response.ok) throw new Error("Failed to update profile");
 

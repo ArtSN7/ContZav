@@ -1,5 +1,5 @@
 import { SocialAccount } from '../models/User.js';
-import { n8nService } from './n8n.service.js';
+import { N8nService } from './n8n.service.js';
 import { Types } from 'mongoose';
 
 export class SocialService {
@@ -46,14 +46,14 @@ export class SocialService {
             scheduleDate: scheduleDate.toISOString(),
         };
 
-        await n8nService.triggerWorkflow('publish-content', publishData);
+        await N8nService.triggerWorkflow('publish-content', publishData);
     }
 
     static async syncAccountData(accountId: string): Promise<void> {
         const account = await SocialAccount.findById(accountId);
         if (!account) throw new Error('Social account not found');
 
-        await n8nService.triggerWorkflow('sync-account-data', {
+        await N8nService.triggerWorkflow('sync-account-data', {
             accountId: account._id.toString(),
             platform: account.platform,
             accessToken: account.access_token

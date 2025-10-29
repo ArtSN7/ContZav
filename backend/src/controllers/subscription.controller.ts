@@ -1,160 +1,180 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { SubscriptionService } from '../services/subscription.service.js';
+import { AccountService } from '../services/account.service.js';
+import { AppError } from '../exceptions/AppError.js';
 
 export class SubscriptionController {
-    /**
-     * Получить список всех доступных тарифных планов
-     * @param req - Запрос от авторизованного пользователя
-     * @param res - Ответ с массивом тарифных планов
-     * @returns {Object[]} Массив всех тарифных планов
-     */
-    static async getAllPlans(req: Request, res: Response) {
+    static async getSubscription(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const plans = await SubscriptionService.getAllPlans();
-            res.json(plans);
-        } catch (error) {
-            res.status(500).json({ error: 'Failed to fetch subscription plans' });
+            if (!req.user) throw new AppError('Unauthorized', 401);
+
+            const subscription = await SubscriptionService.getUserSubscription(req.user.id);
+            const billingHistory = await AccountService.getPaymentHistory(req.user.id);
+
+            res.json({
+                success: true,
+                data: {
+                    plan: subscription.plan_id?.name || 'Free',
+                    price: subscription.plan_id?.price || 0,
+                    billingCycle: 'monthly',
+                    nextBilling: new Date(subscription.current_period_end).toLocaleDateString('ru-RU'),
+                    status: subscription.status,
+                    usage: {
+                        videosUsed: await SubscriptionService.getCurrentUsage(req.user.id, 'content'),
+                        videosLimit: subscription.plan_id?.monthly_limit || 10,
+                        networksUsed: 0,
+                        networksLimit: subscription.plan_id?.social_networks_limit || 3
+                    },
+                    billingHistory: billingHistory.map((payment: any) => ({
+                        date: new Date(payment.created_at).toLocaleDateString('ru-RU'),
+                        amount: payment.amount,
+                        status: payment.status,
+                        invoice: payment.invoice_url ? `INV-${payment._id.toString().slice(-6)}` : 'N/A'
+                    }))
+                }
+            });
+        } catch (error: any) {
+            console.error('SubscriptionController error:', error);
+            res.status(500).json({
+                success: false,
+                message: error.message || 'Internal server error'
+            });
         }
     }
 
-    /**
-     * Получить информацию о конкретном тарифном плане
-     * @param req - Запрос с ID тарифного плана
-     * @param req.params.planId - ID тарифного плана
-     * @param res - Ответ с информацией о тарифе
-     * @returns {Object} Полная информация о тарифном плане
-     */
-    static async getPlan(req: Request, res: Response) {
+    static async getAllPlans(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const plans = await SubscriptionService.getAllPlans();
+            res.json({
+                success: true,
+                data: plans
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    static async getPlan(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const { planId } = req.params;
             const plan = await SubscriptionService.getPlan(planId);
-            res.json(plan);
+            res.json({
+                success: true,
+                data: plan
+            });
         } catch (error) {
-            res.status(500).json({ error: 'Failed to fetch subscription plan' });
+            next(error);
         }
     }
 
-    /**
-     * Создать новый тарифный план (только для администраторов)
-     * @param req - Запрос с данными нового тарифного плана
-     * @param req.body.name - Название тарифного плана
-     * @param req.body.price - Цена тарифа
-     * @param req.body.features - Массив доступных функций
-     * @param res - Ответ с созданным тарифным планом
-     * @returns {Object} Созданный тарифный план
-     */
-    static async createPlan(req: Request, res: Response) {
+    static async getUserSubscription(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const planData = req.body;
-            const plan = await SubscriptionService.createPlan(planData);
-            res.status(201).json(plan);
+            if (!req.user) throw new AppError('Unauthorized', 401);
+            const subscription = await SubscriptionService.getUserSubscription(req.user.id);
+            res.json({
+                success: true,
+                data: subscription
+            });
         } catch (error) {
-            res.status(500).json({ error: 'Failed to create subscription plan' });
+            next(error);
         }
     }
 
-    /**
-     * Обновить существующий тарифный план (только для администраторов)
-     * @param req - Запрос с ID плана и новыми данными
-     * @param req.params.planId - ID тарифного плана для обновления
-     * @param req.body - Новые данные тарифного плана
-     * @param res - Ответ с обновленным тарифным планом
-     * @returns {Object} Обновленный тарифный план
-     */
-    static async updatePlan(req: Request, res: Response) {
+    static async updateUserSubscription(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            if (!req.user) throw new AppError('Unauthorized', 401);
+            const { planId } = req.body;
+            const subscription = await SubscriptionService.updateUserSubscription(req.user.id, planId);
+            res.json({
+                success: true,
+                data: subscription,
+                message: 'Subscription updated successfully'
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    static async cancelSubscription(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            if (!req.user) throw new AppError('Unauthorized', 401);
+            const subscription = await SubscriptionService.cancelSubscription(req.user.id);
+            res.json({
+                success: true,
+                data: subscription,
+                message: 'Subscription cancelled'
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    static async checkLimit(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            if (!req.user) throw new AppError('Unauthorized', 401);
+            const { feature } = req.params;
+            if (feature !== 'content' && feature !== 'ai_generations') {
+                throw new AppError('Invalid feature', 400);
+            }
+            const hasCapacity = await SubscriptionService.checkSubscriptionLimit(req.user.id, feature);
+            res.json({
+                success: true,
+                data: { hasCapacity }
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    static async createPlan(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const plan = await SubscriptionService.createPlan(req.body);
+            res.json({
+                success: true,
+                data: plan,
+                message: 'Plan created successfully'
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    static async updatePlan(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const { planId } = req.params;
-            const planData = req.body;
-            const plan = await SubscriptionService.updatePlan(planId, planData);
-            res.json(plan);
+            const plan = await SubscriptionService.updatePlan(planId, req.body);
+            res.json({
+                success: true,
+                data: plan,
+                message: 'Plan updated successfully'
+            });
         } catch (error) {
-            res.status(500).json({ error: 'Failed to update subscription plan' });
+            next(error);
         }
     }
 
-    /**
-     * Удалить тарифный план (только для администраторов)
-     * @param req - Запрос с ID плана для удаления
-     * @param req.params.planId - ID тарифного плана для удаления
-     * @param res - Ответ с подтверждением удаления
-     * @returns {Object} Сообщение об успешном удалении тарифного плана
-     */
-    static async deletePlan(req: Request, res: Response) {
+    static async deletePlan(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const { planId } = req.params;
             await SubscriptionService.deletePlan(planId);
-            res.status(204).send();
+            res.json({
+                success: true,
+                message: 'Plan deleted successfully'
+            });
         } catch (error) {
-            res.status(500).json({ error: 'Failed to delete subscription plan' });
+            next(error);
         }
     }
 
-    /**
-     * Получить информацию о текущей подписке пользователя
-     * @param req - Запрос от авторизованного пользователя
-     * @param res - Ответ с информацией о подписке
-     * @returns {Object} Текущая подписка пользователя
-     */
-    static async getUserSubscription(req: Request, res: Response) {
-        try {
-            const userId = req.user!.id;
-            const subscription = await SubscriptionService.getUserSubscription(userId);
-            res.json(subscription);
-        } catch (error) {
-            res.status(500).json({ error: 'Failed to fetch user subscription' });
-        }
+    static async getPlans(req: Request, res: Response, next: NextFunction): Promise<void> {
+        return this.getAllPlans(req, res, next);
     }
 
-    /**
-     * Изменить тарифный план пользователя
-     * @param req - Запрос с новым ID тарифного плана
-     * @param req.body.planId - ID нового тарифного плана
-     * @param res - Ответ с обновленной подпиской
-     * @returns {Object} Обновленная подписка пользователя
-     */
-    static async updateUserSubscription(req: Request, res: Response) {
-        try {
-            const userId = req.user!.id;
-            const { planId } = req.body;
-            const subscription = await SubscriptionService.updateUserSubscription(userId, planId);
-            res.json(subscription);
-        } catch (error) {
-            res.status(500).json({ error: 'Failed to update user subscription' });
-        }
+    static async updateSubscription(req: Request, res: Response, next: NextFunction): Promise<void> {
+        return this.updateUserSubscription(req, res, next);
     }
 
-    /**
-     * Отменить подписку пользователя
-     * Подписка остается активной до конца оплаченного периода
-     * @param req - Запрос от авторизованного пользователя
-     * @param res - Ответ с обновленной подпиской
-     * @returns {Object} Подписка с статусом "отменена"
-     */
-    static async cancelSubscription(req: Request, res: Response) {
-        try {
-            const userId = req.user!.id;
-            const subscription = await SubscriptionService.cancelSubscription(userId);
-            res.json(subscription);
-        } catch (error) {
-            res.status(500).json({ error: 'Failed to cancel subscription' });
-        }
-    }
-
-    /**
-     * Проверить лимиты использования для текущей подписки
-     * @param req - Запрос с типом лимита для проверки
-     * @param req.params.feature - Тип лимита: 'content' или 'ai_generations'
-     * @param res - Ответ с информацией о доступности лимита
-     * @returns {Object} Информация о доступности лимита
-     */
-    static async checkLimit(req: Request, res: Response) {
-        try {
-            const userId = req.user!.id;
-            const { feature } = req.params as { feature: 'content' | 'ai_generations' };
-            const hasLimit = await SubscriptionService.checkSubscriptionLimit(userId, feature);
-            res.json({ hasLimit });
-        } catch (error) {
-            res.status(500).json({ error: 'Failed to check subscription limit' });
-        }
+    static async checkUsage(req: Request, res: Response, next: NextFunction): Promise<void> {
+        return this.checkLimit(req, res, next);
     }
 }

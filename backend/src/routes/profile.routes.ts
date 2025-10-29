@@ -1,21 +1,28 @@
-import { Router } from 'express';
-import { ProfileController } from '../controllers/profile.controller.js';
-import { authMiddleware } from '../middleware/auth.middleware.js';
+// import { Router } from 'express';
+// import { ProfileController } from '../controllers/profile.controller.js';
+// import { SubscriptionController } from '../controllers/subscription.controller.js';
+// import { authMiddleware } from '../middleware/auth.middleware.js';
 
-const router = Router();
+// const router = Router();
 
-router.use(authMiddleware);
+// router.use(authMiddleware);
 
-router.get('/', ProfileController.getProfile);
-router.put('/', ProfileController.updateProfile);
-router.put('/password', ProfileController.changePassword);
-router.get('/2fa', ProfileController.getTwoFactorSettings);
-router.post('/2fa/enable', ProfileController.enableTwoFactor);
-router.post('/2fa/disable', ProfileController.disableTwoFactor);
-router.post('/verify-password', ProfileController.verifyPassword);
-router.get('/sessions', ProfileController.getActiveSessions);
-router.post('/sessions', ProfileController.createSession);
-router.delete('/sessions/:sessionId', ProfileController.terminateSession);
-router.delete('/sessions', ProfileController.terminateAllSessions);
+// router.get('/', ProfileController.getProfile);
+// router.put('/', ProfileController.updateProfile);
+// router.put('/profile/password', ProfileController.changePassword);
 
-export default router;
+// router.get('/profile/2fa', ProfileController.getTwoFactorSettings);
+// router.post('/profile/2fa/enable', ProfileController.enableTwoFactor);
+// router.post('/profile/2fa/disable', ProfileController.disableTwoFactor);
+
+// router.get('/profile/sessions', ProfileController.getActiveSessions);
+// router.delete('/profile/sessions/:sessionId', ProfileController.terminateSession);
+// router.delete('/profile/sessions', ProfileController.terminateAllSessions);
+
+// router.get('/subscription', SubscriptionController.getSubscription);
+// router.get('/subscription/plans', SubscriptionController.getPlans);
+// router.put('/subscription', SubscriptionController.updateSubscription);
+// router.post('/subscription/cancel', SubscriptionController.cancelSubscription);
+// router.get('/subscription/usage/:feature', SubscriptionController.checkUsage);
+
+// export default router;

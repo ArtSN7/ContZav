@@ -1,16 +1,14 @@
-import { Schema, model, Document, Types } from 'mongoose';
+import { Document, Types, Schema, model } from 'mongoose';
 
 export interface ISubscriptionPlan extends Document {
     name: string;
-    description: string;
     price: number;
     currency: string;
-    interval: 'month' | 'year';
-    features: string[];
+    monthly_limit: number;
+    social_networks_limit: number;
     max_content: number;
     max_ai_generations: number;
-    analytics_access: boolean;
-    priority_support: boolean;
+    features: string[];
     is_active: boolean;
     created_at: Date;
     updated_at: Date;
@@ -19,45 +17,41 @@ export interface ISubscriptionPlan extends Document {
 export interface IUserSubscription extends Document {
     user_id: Types.ObjectId;
     plan_id: Types.ObjectId;
-    status: 'active' | 'canceled' | 'past_due';
+    status: 'active' | 'canceled' | 'expired';
     current_period_start: Date;
     current_period_end: Date;
     cancel_at_period_end: boolean;
-    stripe_subscription_id?: string;
     created_at: Date;
     updated_at: Date;
 }
 
 const subscriptionPlanSchema = new Schema<ISubscriptionPlan>({
     name: { type: String, required: true },
-    description: { type: String, required: true },
     price: { type: Number, required: true },
     currency: { type: String, default: 'RUB' },
-    interval: { type: String, enum: ['month', 'year'], required: true },
-    features: [{ type: String }],
+    monthly_limit: { type: Number, required: true },
+    social_networks_limit: { type: Number, required: true },
     max_content: { type: Number, required: true },
     max_ai_generations: { type: Number, required: true },
-    analytics_access: { type: Boolean, default: false },
-    priority_support: { type: Boolean, default: false },
+    features: [{ type: String }],
     is_active: { type: Boolean, default: true }
 }, {
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
 });
 
 const userSubscriptionSchema = new Schema<IUserSubscription>({
-    user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
+    user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     plan_id: { type: Schema.Types.ObjectId, ref: 'SubscriptionPlan', required: true },
-    status: { type: String, enum: ['active', 'canceled', 'past_due'], required: true },
+    status: { type: String, enum: ['active', 'canceled', 'expired'], default: 'active' },
     current_period_start: { type: Date, required: true },
     current_period_end: { type: Date, required: true },
-    cancel_at_period_end: { type: Boolean, default: false },
-    stripe_subscription_id: { type: String }
+    cancel_at_period_end: { type: Boolean, default: false }
 }, {
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
 });
 
-subscriptionPlanSchema.index({ price: 1 });
-userSubscriptionSchema.index({ user_id: 1 });
+subscriptionPlanSchema.index({ is_active: 1, price: 1 });
+userSubscriptionSchema.index({ user_id: 1 }, { unique: true });
 userSubscriptionSchema.index({ status: 1 });
 
 export const SubscriptionPlan = model<ISubscriptionPlan>('SubscriptionPlan', subscriptionPlanSchema);

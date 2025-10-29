@@ -2,6 +2,52 @@ import { SubscriptionPlan, UserSubscription } from '../models/Subscription.js';
 import { Types } from 'mongoose';
 
 export class SubscriptionService {
+    static async getUserSubscription(userId: string): Promise<any> {
+        try {
+            let subscription = await UserSubscription.findOne({
+                user_id: new Types.ObjectId(userId)
+            }).populate('plan_id');
+
+            if (!subscription) {
+                let freePlan = await SubscriptionPlan.findOne({ is_active: true }).sort({ price: 1 });
+
+                if (!freePlan) {
+                    freePlan = new SubscriptionPlan({
+                        name: 'Free',
+                        price: 0,
+                        currency: 'RUB',
+                        monthly_limit: 10,
+                        social_networks_limit: 3,
+                        max_content: 10,
+                        max_ai_generations: 5,
+                        features: ['basic_content', 'ai_avatar'],
+                        is_active: true
+                    });
+                    await freePlan.save();
+                }
+
+                subscription = new UserSubscription({
+                    user_id: new Types.ObjectId(userId),
+                    plan_id: freePlan._id,
+                    status: 'active',
+                    current_period_start: new Date(),
+                    current_period_end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+                });
+                await subscription.save();
+                await subscription.populate('plan_id');
+            }
+
+            return subscription;
+        } catch (error: any) {
+            console.error('SubscriptionService.getUserSubscription error:', error);
+            throw error;
+        }
+    }
+
+    static async getCurrentUsage(userId: string, feature: 'content' | 'ai_generations'): Promise<number> {
+        return 0;
+    }
+
     static async getAllPlans(): Promise<any[]> {
         return SubscriptionPlan.find({ is_active: true }).sort({ price: 1 });
     }
@@ -31,29 +77,6 @@ export class SubscriptionService {
     static async deletePlan(planId: string): Promise<void> {
         const result = await SubscriptionPlan.findByIdAndDelete(planId);
         if (!result) throw new Error('Plan not found');
-    }
-
-    static async getUserSubscription(userId: string): Promise<any> {
-        const subscription = await UserSubscription.findOne({ user_id: new Types.ObjectId(userId) })
-            .populate('plan_id');
-
-        if (!subscription) {
-            const freePlan = await SubscriptionPlan.findOne({ price: 0 });
-            if (!freePlan) throw new Error('Free plan not found');
-
-            const newSubscription = new UserSubscription({
-                user_id: new Types.ObjectId(userId),
-                plan_id: freePlan._id,
-                status: 'active',
-                current_period_start: new Date(),
-                current_period_end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-            });
-            await newSubscription.save();
-            await newSubscription.populate('plan_id');
-            return newSubscription;
-        }
-
-        return subscription;
     }
 
     static async updateUserSubscription(userId: string, planId: string): Promise<any> {
@@ -97,24 +120,5 @@ export class SubscriptionService {
             subscription.plan_id.max_ai_generations;
 
         return usage < limit;
-    }
-
-    static async getCurrentUsage(userId: string, feature: 'content' | 'ai_generations'): Promise<number> {
-        const currentPeriodStart = new Date();
-        currentPeriodStart.setDate(1);
-
-        if (feature === 'content') {
-            const Content = (await import('../models/Content.js')).Content;
-            return Content.countDocuments({
-                user_id: new Types.ObjectId(userId),
-                created_at: { $gte: currentPeriodStart }
-            });
-        } else {
-            const AIGenerationRequest = (await import('../models/AIGeneration.js')).AIGenerationRequest;
-            return AIGenerationRequest.countDocuments({
-                user_id: new Types.ObjectId(userId),
-                created_at: { $gte: currentPeriodStart }
-            });
-        }
     }
 }

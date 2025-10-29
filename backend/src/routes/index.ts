@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import authRoutes from './auth.routes.js';
 import accountRoutes from './account.routes.js';
-import profileRoutes from './profile.routes.js';
 import subscriptionRoutes from './subscription.routes.js';
 import analyticsRoutes from './analytics.routes.js';
 import aiRoutes from './ai.routes.js';
@@ -15,7 +14,6 @@ router.use(requestLoggerMiddleware);
 
 router.use('/auth', authRoutes);
 router.use('/account', accountRoutes);
-router.use('/profile', profileRoutes);
 router.use('/subscription', subscriptionRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/ai', aiRoutes);

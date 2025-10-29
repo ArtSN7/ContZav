@@ -1,214 +1,176 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { ProfileService } from '../services/profile.service.js';
-import { User } from '../models/User.js';
-import { SocialAccount } from '../models/User.js';
+import { AccountService } from '../services/account.service.js';
+import { SubscriptionService } from '../services/subscription.service.js';
+import { AnalyticsService } from '../services/analytics.service.js';
+import { AppError } from '../exceptions/AppError.js';
 
 export class ProfileController {
-    /**
-     * Получить полную информацию о профиле пользователя
-     * @param req - Запрос от авторизованного пользователя
-     * @param res - Ответ с данными профиля
-     * @returns {Object} Полные данные профиля пользователя
-     */
-    static async getProfile(req: Request, res: Response) {
+    static async getTwoFactorSettings(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const userId = req.user!.id;
-            const user = await User.findById(userId);
-            const profile = await ProfileService.getProfile(userId);
-            const socialAccounts = await SocialAccount.find({ user_id: userId });
+            if (!req.user) throw new AppError('Unauthorized', 401);
+
+            const settings = await ProfileService.getTwoFactorSettings(req.user.id);
 
             res.json({
                 success: true,
-                data: { user, profile, socialAccounts },
+                data: settings
             });
         } catch (error) {
-            res.status(500).json({ error: 'Failed to fetch profile' });
+            next(error);
         }
     }
 
-    /**
-     * Обновить данные профиля пользователя
-     * @param req - Запрос с новыми данными профиля
-     * @param req.body.name - Новое имя пользователя
-     * @param req.body.email - Новый email (требует подтверждения)
-     * @param req.body.avatar_url - Новая ссылка на аватар
-     * @param res - Ответ с обновленным профилем
-     * @returns {Object} Обновленные данные профиля
-     */
-    static async updateProfile(req: Request, res: Response) {
+    static async getProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const userId = req.user!.id;
-            const profileData = req.body;
+            console.log('🟢 getProfile called with user:', req.user);
 
-            const updatedProfile = await ProfileService.updateProfile(userId, profileData);
+            if (!req.user) {
+                console.log('🔴 No user in request');
+                throw new AppError('Unauthorized', 401);
+            }
+
+            console.log('🟡 Fetching profile for user ID:', req.user.id);
+
+            const profile = await ProfileService.getProfile(req.user.id);
+            console.log('🟢 Profile fetched:', profile);
 
             res.json({
                 success: true,
-                data: updatedProfile,
-                message: 'Profile updated successfully',
+                data: {
+                    user: profile
+                }
             });
-        } catch (error) {
-            res.status(500).json({ error: 'Failed to update profile' });
+        } catch (error: any) {
+            console.error('🔴 ProfileController error:', error);
+            console.error('🔴 Error stack:', error.stack);
+            res.status(500).json({
+                success: false,
+                message: error.message || 'Internal server error'
+            });
         }
     }
 
-    /**
-     * Изменить пароль пользователя
-     * Требует подтверждения текущего пароля
-     * @param req - Запрос с паролями
-     * @param req.body.currentPassword - Текущий пароль для подтверждения
-     * @param req.body.newPassword - Новый пароль
-     * @param res - Ответ с подтверждением смены пароля
-     * @returns {Object} Сообщение об успешной смене пароля
-     */
-    static async changePassword(req: Request, res: Response) {
+    static async updateProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const userId = req.user!.id;
+            if (!req.user) throw new AppError('Unauthorized', 401);
+
+            const updatedProfile = await ProfileService.updateProfile(req.user.id, req.body);
+
+            res.json({
+                success: true,
+                data: { user: updatedProfile },
+                message: 'Profile updated successfully'
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    static async changePassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            if (!req.user) throw new AppError('Unauthorized', 401);
+
             const { currentPassword, newPassword } = req.body;
-            await ProfileService.changePassword(userId, currentPassword, newPassword);
-            res.json({ message: 'Password updated successfully' });
+            await ProfileService.changePassword(req.user.id, currentPassword, newPassword);
+
+            res.json({
+                success: true,
+                message: 'Password changed successfully'
+            });
         } catch (error) {
-            res.status(500).json({ error: 'Failed to change password' });
+            next(error);
         }
     }
 
-    /**
-     * Получить настройки двухфакторной аутентификации
-     * @param req - Запрос от авторизованного пользователя
-     * @param res - Ответ с настройками 2FA
-     * @returns {Object} Текущие настройки двухфакторной аутентификации
-     */
-    static async getTwoFactorSettings(req: Request, res: Response) {
+    static async enableTwoFactor(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const userId = req.user!.id;
-            const settings = await ProfileService.getTwoFactorSettings(userId);
-            res.json(settings);
-        } catch (error) {
-            res.status(500).json({ error: 'Failed to fetch 2FA settings' });
-        }
-    }
+            if (!req.user) throw new AppError('Unauthorized', 401);
 
-    /**
-     * Включить двухфакторную аутентификацию
-     * @param req - Запрос с параметрами 2FA
-     * @param req.body.method - Метод 2FA: SMS или приложение-аутентификатор
-     * @param req.body.phoneNumber - Номер телефона (только для SMS метода)
-     * @param res - Ответ с настройками 2FA и резервными кодами
-     * @returns {Object} Настройки 2FA с резервными кодами
-     */
-    static async enableTwoFactor(req: Request, res: Response) {
-        try {
-            const userId = req.user!.id;
             const { method, phoneNumber } = req.body;
-            const settings = await ProfileService.enableTwoFactor(userId, method, phoneNumber);
-            res.json(settings);
+            const settings = await ProfileService.enableTwoFactor(req.user.id, method, phoneNumber);
+
+            res.json({
+                success: true,
+                data: { backupCodes: settings.backup_codes },
+                message: 'Two-factor authentication enabled'
+            });
         } catch (error) {
-            res.status(500).json({ error: 'Failed to enable 2FA' });
+            next(error);
         }
     }
 
-    /**
-     * Отключить двухфакторную аутентификацию
-     * @param req - Запрос от авторизованного пользователя
-     * @param res - Ответ с обновленными настройками
-     * @returns {Object} Настройки с отключенной 2FA
-     */
-    static async disableTwoFactor(req: Request, res: Response) {
+    static async disableTwoFactor(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const userId = req.user!.id;
-            const settings = await ProfileService.disableTwoFactor(userId);
-            res.json(settings);
+            if (!req.user) throw new AppError('Unauthorized', 401);
+
+            await ProfileService.disableTwoFactor(req.user.id);
+
+            res.json({
+                success: true,
+                message: 'Two-factor authentication disabled'
+            });
         } catch (error) {
-            res.status(500).json({ error: 'Failed to disable 2FA' });
+            next(error);
         }
     }
 
-    /**
-     * Проверить правильность пароля пользователя
-     * Используется для подтверждения действий (удаление аккаунта и т.д.)
-     * @param req - Запрос с паролем для проверки
-     * @param req.body.password - Пароль для проверки
-     * @param res - Ответ с результатом проверки
-     * @returns {Object} Результат проверки пароля
-     */
-    static async verifyPassword(req: Request, res: Response) {
+    static async getActiveSessions(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const userId = req.user!.id;
-            const { password } = req.body;
-            const isValid = await ProfileService.verifyPassword(userId, password);
-            res.json({ valid: isValid });
+            if (!req.user) throw new AppError('Unauthorized', 401);
+
+            const sessions = await ProfileService.getActiveSessions(req.user.id);
+
+            res.json({
+                success: true,
+                data: sessions
+            });
         } catch (error) {
-            res.status(500).json({ error: 'Failed to verify password' });
+            next(error);
         }
     }
 
-    /**
-     * Получить список активных сессий пользователя
-     * @param req - Запрос от авторизованного пользователя
-     * @param res - Ответ с массивом активных сессий
-     * @returns {Object[]} Массив активных сессий с устройствами и локациями
-     */
-    static async getActiveSessions(req: Request, res: Response) {
+    static async terminateSession(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const userId = req.user!.id;
-            const sessions = await ProfileService.getActiveSessions(userId);
-            res.json(sessions);
-        } catch (error) {
-            res.status(500).json({ error: 'Failed to fetch active sessions' });
-        }
-    }
+            if (!req.user) throw new AppError('Unauthorized', 401);
 
-    /**
- * Завершить конкретную сессию пользователя
- * @param req - Запрос с ID сессии для завершения
- * @param req.params.sessionId - ID сессии для завершения
- * @param res - Ответ с подтверждением завершения
- * @returns {Object} Сообщение об успешном завершении сессии
- */
-    static async terminateSession(req: Request, res: Response) {
-        try {
             const { sessionId } = req.params;
             await ProfileService.terminateSession(sessionId);
-            res.json({ message: 'Session terminated successfully' });
+
+            res.json({
+                success: true,
+                message: 'Session terminated'
+            });
         } catch (error) {
-            res.status(500).json({ error: 'Failed to terminate session' });
+            next(error);
         }
     }
 
-    /**
-     * Завершить все сессии пользователя кроме текущей
-     * Используется при смене пароля или подозрительной активности
-     * @param req - Запрос от авторизованного пользователя
-     * @param res - Ответ с подтверждением завершения сессий
-     * @returns {Object} Сообщение об успешном завершении всех сессий
-     */
-    static async terminateAllSessions(req: Request, res: Response) {
+    static async terminateAllSessions(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const userId = req.user!.id;
-            await ProfileService.terminateAllSessions(userId);
-            res.json({ message: 'All sessions terminated successfully' });
+            if (!req.user) throw new AppError('Unauthorized', 401);
+
+            await ProfileService.terminateAllSessions(req.user.id);
+
+            res.json({
+                success: true,
+                message: 'All sessions terminated'
+            });
         } catch (error) {
-            res.status(500).json({ error: 'Failed to terminate sessions' });
+            next(error);
         }
     }
 
-    /**
-     * Создать новую сессию пользователя
-     * @param req - Запрос с информацией об устройстве
-     * @param req.body.deviceInfo - Информация об устройстве
-     * @param req.body.ipAddress - IP адрес
-     * @param req.body.location - Локация
-     * @param res - Ответ с созданной сессией
-     * @returns {Object} Созданная сессия
-     */
-    static async createSession(req: Request, res: Response) {
-        try {
-            const userId = req.user!.id;
-            const { deviceInfo, ipAddress, location } = req.body;
-            const session = await ProfileService.createSession(userId, deviceInfo, ipAddress, location);
-            res.json(session);
-        } catch (error) {
-            res.status(500).json({ error: 'Failed to create session' });
-        }
+    private static formatLastActive(date: Date): string {
+        const now = new Date();
+        const diff = now.getTime() - date.getTime();
+        const minutes = Math.floor(diff / 60000);
+        const hours = Math.floor(minutes / 60);
+        const days = Math.floor(hours / 24);
+
+        if (days > 0) return `${days} дней назад`;
+        if (hours > 0) return `${hours} часов назад`;
+        if (minutes > 0) return `${minutes} минут назад`;
+        return 'Сейчас';
     }
 }

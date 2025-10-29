@@ -15,9 +15,9 @@ export interface IPaymentHistory extends Document {
     user_id: Types.ObjectId;
     amount: number;
     currency: string;
-    status: 'pending' | 'succeeded' | 'failed';
+    status: 'pending' | 'completed' | 'failed';
     payment_method: string;
-    stripe_payment_intent_id?: string;
+    invoice_url?: string;
     created_at: Date;
 }
 
@@ -36,9 +36,9 @@ const paymentHistorySchema = new Schema<IPaymentHistory>({
     user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     amount: { type: Number, required: true },
     currency: { type: String, default: 'RUB' },
-    status: { type: String, enum: ['pending', 'succeeded', 'failed'], required: true },
+    status: { type: String, enum: ['pending', 'completed', 'failed'], default: 'pending' },
     payment_method: { type: String, required: true },
-    stripe_payment_intent_id: { type: String }
+    invoice_url: { type: String }
 }, {
     timestamps: { createdAt: 'created_at' }
 });
