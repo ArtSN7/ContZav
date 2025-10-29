@@ -46,18 +46,19 @@ export interface IContentData extends Document {
 
 export interface IOAuthToken {
     access_token: string;
-    refresh_token: string;
-    expires_in: number;
-    token_type: string;
-    scope: string;
+    refresh_token?: string;
+    expires_in?: number;
+    token_type?: string;
+    scope?: string;
+    id_token?: string;
 }
 
 export interface IOAuthProfile {
     id: string;
     email: string;
     name: string;
-    given_name: string;
-    family_name: string;
-    picture: string;
-    locale: string;
+    given_name?: string;
+    family_name?: string;
+    picture?: string;
+    locale?: string;
 }

@@ -15,7 +15,7 @@ export class N8nService {
             );
 
             return response.data;
-        } catch (error) {
+        } catch (error: any) {
             logger.error(`Failed to get workflow status ${workflowId}:`, error);
             throw error;
         }
@@ -35,7 +35,7 @@ export class N8nService {
             );
 
             logger.info(`N8N workflow ${workflowName} triggered successfully`);
-        } catch (error) {
+        } catch (error: any) {
             logger.error(`Failed to trigger N8N workflow ${workflowName}:`, error);
             throw error;
         }
@@ -52,7 +52,7 @@ export class N8nService {
                     }
                 }
             );
-        } catch (error) {
+        } catch (error: any) {
             logger.error('Failed to update generation status:', error);
         }
     }

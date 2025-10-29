@@ -22,10 +22,8 @@ const envSchema = z.object({
     VK_CLIENT_ID: z.string().optional().default(''),
     VK_CLIENT_SECRET: z.string().optional().default(''),
 
-    APPLE_CLIENT_ID: z.string().optional().default(''),
-    APPLE_TEAM_ID: z.string().optional().default(''),
-    APPLE_KEY_ID: z.string().optional().default(''),
-    APPLE_PRIVATE_KEY: z.string().optional().default(''),
+    YANDEX_CLIENT_ID: z.string().optional().default(''),
+    YANDEX_CLIENT_SECRET: z.string().optional().default(''),
 
     N8N_URL: z.string().url().optional().default('http://localhost:5678'),
     N8N_API_KEY: z.string().optional().default(''),

@@ -13,7 +13,7 @@ router.get('/google', AuthController.googleAuth);
 router.get('/google/callback', AuthController.googleCallback);
 router.get('/vk', AuthController.vkAuth);
 router.get('/vk/callback', AuthController.vkCallback);
-router.get('/apple', AuthController.appleAuth);
-router.post('/apple/callback', AuthController.appleCallback);
+router.get('/yandex', AuthController.yandexAuth);
+router.get('/yandex/callback', AuthController.yandexCallback);
 
 export default router;

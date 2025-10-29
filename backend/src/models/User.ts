@@ -17,7 +17,7 @@ export interface IAuthUser extends Document {
 
 export interface ISocialAccount extends Document {
     user_id: Types.ObjectId;
-    platform: 'google' | 'vkontakte' | 'apple' | 'youtube' | 'instagram' | 'tiktok';
+    platform: 'google' | 'vkontakte' | 'yandex' | 'youtube' | 'instagram' | 'tiktok';
     platform_user_id: string;
     email: string;
     username?: string;
@@ -43,7 +43,7 @@ const authUserSchema = new Schema<IAuthUser>({
 
 const socialAccountSchema = new Schema<ISocialAccount>({
     user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    platform: { type: String, enum: ['google', 'vkontakte', 'apple', 'youtube', 'instagram', 'tiktok'], required: true },
+    platform: { type: String, enum: ['google', 'vkontakte', 'yandex', 'youtube', 'instagram', 'tiktok'], required: true },
     platform_user_id: { type: String, required: true },
     email: { type: String, required: true },
     username: { type: String },

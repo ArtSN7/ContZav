@@ -1,21 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import { User } from '../models/User.js';
 import { OAuthService } from '../services/oauth.service.js';
-import { generateState, getGoogleAuthUrl, getVKAuthUrl, getAppleAuthUrl } from '../utils/oauth.utils.js';
+import { generateState, getGoogleAuthUrl, getVKAuthUrl, getYandexAuthUrl } from '../utils/oauth.utils.js';
 import { AppError } from '../exceptions/AppError.js';
 import { AuthService } from '../services/auth.service.js';
 import { logger } from '../utils/logger.js';
 import { config } from '../config/index.js';
 
 export class AuthController {
-    /**
-     * Выйти из системы на всех устройствах
-     * Завершает все активные сессии пользователя
-     * @param req - Запрос от авторизованного пользователя
-     * @param res - Ответ с подтверждением выхода
-     * @param next - Функция next Express для обработки ошибок
-     * @returns {Object} Подтверждение успешного выхода
-     */
     static async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             res.clearCookie('refreshToken');
@@ -28,14 +20,6 @@ export class AuthController {
         }
     }
 
-    /**
-     * Тестовый метод для получения профиля (для разработки)
-     * Возвращает моковые данные пользователя без обращения к БД
-     * @param req - Запрос (авторизация не требуется)
-     * @param res - Ответ с тестовыми данными профиля
-     * @param next - Функция next Express для обработки ошибок
-     * @returns {Object} Полные тестовые данные пользователя
-     */
     static async getProfileMock(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const mockUser = {
@@ -114,14 +98,6 @@ export class AuthController {
         }
     }
 
-    /**
-     * Получить полную информацию о профиле пользователя
-     * Личные данные, подключенные соцсети, подписка и настройки безопасности
-     * @param req - Запрос от авторизованного пользователя
-     * @param res - Ответ с данными профиля
-     * @param next - Функция next Express для обработки ошибок
-     * @returns {Object} Полные данные профиля пользователя
-     */
     static async getProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             if (!req.user) throw new AppError('Unauthorized', 401);
@@ -138,14 +114,6 @@ export class AuthController {
         }
     }
 
-    /**
-     * Начать авторизацию через Google OAuth
-     * Возвращает ссылку для перехода на страницу Google
-     * @param req - Запрос на начало OAuth процесса
-     * @param res - Ответ с URL для авторизации и state токеном
-     * @param next - Функция next Express для обработки ошибок
-     * @returns {Object} URL для OAuth авторизации и state параметр
-     */
     static async googleAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const state = generateState();
@@ -163,16 +131,6 @@ export class AuthController {
         }
     }
 
-    /**
-     * Обработать ответ от Google после авторизации
-     * Система автоматически создает аккаунт если пользователь новый
-     * @param req - Запрос с кодом авторизации от Google
-     * @param req.query.code - Код авторизации от Google OAuth
-     * @param req.query.state - State параметр для проверки безопасности
-     * @param res - Редирект на фронтенд с токенами
-     * @param next - Функция next Express для обработки ошибок
-     * @returns {void} Редирект на фронтенд с параметрами авторизации
-     */
     static async googleCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const { code, state, error: oauthError } = req.query;
@@ -201,13 +159,6 @@ export class AuthController {
         }
     }
 
-    /**
-     * Начать авторизацию через ВКонтакте OAuth
-     * @param req - Запрос на начало OAuth процесса
-     * @param res - Ответ с URL для авторизации ВК
-     * @param next - Функция next Express для обработки ошибок
-     * @returns {Object} URL для VK OAuth и state параметр
-     */
     static async vkAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const state = generateState();
@@ -222,14 +173,6 @@ export class AuthController {
         }
     }
 
-    /**
-     * Обработать ответ от ВКонтакте после авторизации
-     * @param req - Запрос с кодом авторизации от VK
-     * @param req.query.code - Код авторизации от VK OAuth
-     * @param res - Редирект на фронтенд с токенами
-     * @param next - Функция next Express для обработки ошибок
-     * @returns {void} Редирект на фронтенд с параметрами авторизации
-     */
     static async vkCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const { code, error: oauthError } = req.query;
@@ -257,17 +200,10 @@ export class AuthController {
         }
     }
 
-    /**
-     * Начать авторизацию через Apple OAuth
-     * @param req - Запрос на начало OAuth процесса
-     * @param res - Ответ с URL для авторизации Apple
-     * @param next - Функция next Express для обработки ошибок
-     * @returns {Object} URL для Apple OAuth и state параметр
-     */
-    static async appleAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+    static async yandexAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const state = generateState();
-            const authUrl = getAppleAuthUrl(state);
+            const authUrl = getYandexAuthUrl(state);
 
             res.json({
                 success: true,
@@ -278,27 +214,19 @@ export class AuthController {
         }
     }
 
-    /**
-     * Обработать ответ от Apple после авторизации
-     * @param req - Запрос с кодом авторизации от Apple
-     * @param req.body.code - Код авторизации от Apple OAuth
-     * @param res - Редирект на фронтенд с токенами
-     * @param next - Функция next Express для обработки ошибок
-     * @returns {void} Редирект на фронтенд с параметрами авторизации
-     */
-    static async appleCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
+    static async yandexCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const { code, error: oauthError } = req.body;
+            const { code, error: oauthError } = req.query;
 
             if (oauthError) {
-                throw new AppError(`Apple OAuth error: ${oauthError}`, 400);
+                throw new AppError(`Yandex OAuth error: ${oauthError}`, 400);
             }
 
             if (!code) {
                 throw new AppError('Authorization code required', 400);
             }
 
-            const result = await AuthService.handleOAuthCallback('apple', code);
+            const result = await AuthService.handleOAuthCallback('yandex', code as string);
 
             res.cookie('refreshToken', result.refreshToken, {
                 httpOnly: true,
@@ -313,14 +241,6 @@ export class AuthController {
         }
     }
 
-    /**
-     * Обновить access токен с помощью refresh токена
-     * Используется когда access токен истек
-     * @param req - Запрос с refresh токеном в куках
-     * @param res - Ответ с новыми токенами
-     * @param next - Функция next Express для обработки ошибок
-     * @returns {Object} Новые access и refresh токены
-     */
     static async refreshToken(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const { refreshToken } = req.cookies;
@@ -347,15 +267,6 @@ export class AuthController {
         }
     }
 
-    /**
-     * Вход пользователя с email и паролем
-     * @param req - Запрос с учетными данными пользователя
-     * @param req.body.email - Email пользователя
-     * @param req.body.password - Пароль пользователя
-     * @param res - Ответ с токенами и данными пользователя
-     * @param next - Функция next Express для обработки ошибок
-     * @returns {Object} Токены и данные пользователя
-     */
     static async login(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const { email, password } = req.body;
@@ -381,16 +292,6 @@ export class AuthController {
         }
     }
 
-    /**
-     * Регистрация нового пользователя
-     * @param req - Запрос с данными для регистрации
-     * @param req.body.email - Email пользователя
-     * @param req.body.password - Пароль пользователя
-     * @param req.body.name - Имя пользователя
-     * @param res - Ответ с токенами и данными пользователя
-     * @param next - Функция next Express для обработки ошибок
-     * @returns {Object} Токены и данные пользователя
-     */
     static async register(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const { email, password, name } = req.body;

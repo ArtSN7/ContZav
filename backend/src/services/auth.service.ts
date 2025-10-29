@@ -14,11 +14,11 @@ export class AuthService {
             case 'google':
                 ({ tokens, profile } = await OAuthService.exchangeGoogleCode(code));
                 break;
-            case 'vkontakte':
+            case 'vk':
                 ({ tokens, profile } = await OAuthService.exchangeVKCode(code));
                 break;
-            case 'apple':
-                ({ tokens, profile } = await OAuthService.exchangeAppleCode(code));
+            case 'yandex':
+                ({ tokens, profile } = await OAuthService.exchangeYandexCode(code));
                 break;
             default:
                 throw new AppError('Unsupported OAuth platform', 400);
@@ -64,8 +64,8 @@ export class AuthService {
             { upsert: true, new: true }
         );
 
-        const accessToken = TokenService.generateAccessToken(user._id.toString(), user.email);
-        const refreshToken = TokenService.generateRefreshToken(user._id.toString());
+        const accessToken = TokenService.generateAccessToken((user._id as Types.ObjectId).toString(), user.email);
+        const refreshToken = TokenService.generateRefreshToken((user._id as Types.ObjectId).toString());
 
         return { user, accessToken, refreshToken, isNewUser };
     }
@@ -79,8 +79,8 @@ export class AuthService {
                 throw new AppError('User not found', 401);
             }
 
-            const newAccessToken = TokenService.generateAccessToken(user._id.toString(), user.email);
-            const newRefreshToken = TokenService.generateRefreshToken(user._id.toString());
+            const newAccessToken = TokenService.generateAccessToken((user._id as Types.ObjectId).toString(), user.email);
+            const newRefreshToken = TokenService.generateRefreshToken((user._id as Types.ObjectId).toString());
 
             return { accessToken: newAccessToken, refreshToken: newRefreshToken };
         } catch (error) {
@@ -102,8 +102,8 @@ export class AuthService {
         user.last_login = new Date();
         await user.save();
 
-        const accessToken = TokenService.generateAccessToken(user._id.toString(), user.email);
-        const refreshToken = TokenService.generateRefreshToken(user._id.toString());
+        const accessToken = TokenService.generateAccessToken((user._id as Types.ObjectId).toString(), user.email);
+        const refreshToken = TokenService.generateRefreshToken((user._id as Types.ObjectId).toString());
 
         return { user, accessToken, refreshToken };
     }
@@ -121,8 +121,8 @@ export class AuthService {
         });
         await user.save();
 
-        const accessToken = TokenService.generateAccessToken(user._id.toString(), user.email);
-        const refreshToken = TokenService.generateRefreshToken(user._id.toString());
+        const accessToken = TokenService.generateAccessToken((user._id as Types.ObjectId).toString(), user.email);
+        const refreshToken = TokenService.generateRefreshToken((user._id as Types.ObjectId).toString());
 
         return { user, accessToken, refreshToken };
     }

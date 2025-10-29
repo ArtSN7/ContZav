@@ -30,14 +30,13 @@ export const getVKAuthUrl = (state: string): string => {
     return `https://oauth.vk.com/authorize?${params}`;
 };
 
-export const getAppleAuthUrl = (state: string): string => {
+export const getYandexAuthUrl = (state: string): string => {
     const params = new URLSearchParams({
-        client_id: config.APPLE_CLIENT_ID,
-        redirect_uri: `${config.BACKEND_URL}/api/auth/apple/callback`,
+        client_id: config.YANDEX_CLIENT_ID,
+        redirect_uri: `${config.BACKEND_URL}/api/auth/yandex/callback`,
         response_type: 'code',
-        scope: 'name email',
+        scope: 'login:email login:info',
         state,
-        response_mode: 'form_post',
     });
-    return `https://appleid.apple.com/auth/authorize?${params}`;
+    return `https://oauth.yandex.ru/authorize?${params}`;
 };

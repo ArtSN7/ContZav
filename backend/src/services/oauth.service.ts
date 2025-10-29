@@ -1,14 +1,10 @@
 import axios from 'axios';
 import { config } from '../config/index.js';
-import { OAuthToken, OAuthProfile } from '../types/index.js';
+import { IOAuthToken, IOAuthProfile } from '../types/index.js';
 import { logger } from '@/utils/logger.js';
 
-/**
- * Сервис для работы с OAuth провайдерами
- * Обмен кодов на токены, получение профилей пользователей
- */
 export class OAuthService {
-    static async exchangeGoogleCode(code: string): Promise<{ tokens: OAuthToken; profile: OAuthProfile }> {
+    static async exchangeGoogleCode(code: string): Promise<{ tokens: IOAuthToken; profile: IOAuthProfile }> {
         try {
             const redirectUri = `${config.BACKEND_URL}/api/auth/google/callback`;
 
@@ -42,14 +38,15 @@ export class OAuthService {
         }
     }
 
+    static async exchangeVKCode(code: string): Promise<{ tokens: IOAuthToken; profile: IOAuthProfile }> {
+        const redirectUri = `${config.BACKEND_URL}/api/auth/vk/callback`;
 
-    static async exchangeVKCode(code: string): Promise<{ tokens: OAuthToken; profile: OAuthProfile }> {
         const tokenResponse = await axios.get('https://oauth.vk.com/access_token', {
             params: {
                 client_id: config.VK_CLIENT_ID,
                 client_secret: config.VK_CLIENT_SECRET,
                 code,
-                redirect_uri: `${config.FRONTEND_URL}/api/auth/vk/callback`,
+                redirect_uri: redirectUri,
             },
         });
 
@@ -78,45 +75,40 @@ export class OAuthService {
         };
     }
 
-    static async exchangeAppleCode(code: string): Promise<{ tokens: OAuthToken; profile: OAuthProfile }> {
-        const tokenResponse = await axios.post('https://appleid.apple.com/auth/token', new URLSearchParams({
-            client_id: config.APPLE_CLIENT_ID,
-            client_secret: await this.generateAppleClientSecret(),
+    static async exchangeYandexCode(code: string): Promise<{ tokens: IOAuthToken; profile: IOAuthProfile }> {
+        const redirectUri = `${config.BACKEND_URL}/api/auth/yandex/callback`;
+
+        const tokenResponse = await axios.post('https://oauth.yandex.ru/token', new URLSearchParams({
+            client_id: config.YANDEX_CLIENT_ID,
+            client_secret: config.YANDEX_CLIENT_SECRET,
             code,
             grant_type: 'authorization_code',
-            redirect_uri: `${config.FRONTEND_URL}/api/auth/apple/callback`,
+            redirect_uri: redirectUri,
         }), {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         });
 
         const tokens = tokenResponse.data;
 
-        const idToken = tokens.id_token;
-        const payload = JSON.parse(Buffer.from(idToken.split('.')[1], 'base64').toString());
+        const profileResponse = await axios.get('https://login.yandex.ru/info', {
+            headers: { Authorization: `OAuth ${tokens.access_token}` },
+            params: {
+                format: 'json'
+            }
+        });
+
+        const userData = profileResponse.data;
 
         return {
             tokens,
             profile: {
-                id: payload.sub,
-                email: payload.email,
-                name: payload.name || '',
+                id: userData.id,
+                email: userData.default_email,
+                name: userData.real_name || userData.display_name || userData.login,
+                given_name: userData.first_name,
+                family_name: userData.last_name,
+                picture: userData.default_avatar_id ? `https://avatars.yandex.net/get-yapic/${userData.default_avatar_id}/islands-200` : undefined,
             },
         };
-    }
-
-    private static async generateAppleClientSecret(): Promise<string> {
-        const jwt = require('jsonwebtoken');
-        const privateKey = config.APPLE_PRIVATE_KEY.replace(/\\n/g, '\n');
-
-        return jwt.sign({
-            iss: config.APPLE_TEAM_ID,
-            iat: Math.floor(Date.now() / 1000),
-            exp: Math.floor(Date.now() / 1000) + 86400 * 180,
-            aud: 'https://appleid.apple.com',
-            sub: config.APPLE_CLIENT_ID,
-        }, privateKey, {
-            algorithm: 'ES256',
-            keyid: config.APPLE_KEY_ID,
-        });
     }
 }
