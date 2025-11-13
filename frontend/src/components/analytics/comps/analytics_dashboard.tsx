@@ -1,53 +1,96 @@
-"use client"
+"use client";
 
-import {useState} from "react"
-import {AnalyticsFilters} from "./analytics_filters"
-import {MetricsCards} from "./metrics_cards"
-import {AnalyticsCharts} from "./analytics_charts"
-import {TopPerformingContent} from "./top_performing_content"
-import {ExportOptions} from "./export_options"
+import { useState, useEffect } from "react";
+import { AnalyticsFilters } from "./analytics_filters";
+import { MetricsCards } from "./metrics_cards";
+import { AnalyticsCharts } from "./analytics_charts";
+import { TopPerformingContent } from "./top_performing_content";
+import { ExportOptions } from "./export_options";
+import { useApp } from "@/contexts/AppContext";
 
 export function AnalyticsDashboard() {
-    const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
-        from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
-        to: new Date(),
-    })
-    const [selectedNetwork, setSelectedNetwork] = useState("all")
-    const [selectedContent, setSelectedContent] = useState("all")
+  const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
+    from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+    to: new Date(),
+  });
+  const [selectedNetwork, setSelectedNetwork] = useState("all");
+  const [selectedContent, setSelectedContent] = useState("all");
 
-    return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex flex-col space-y-2">
+  const {
+    analyticsData,
+    topContent,
+    loadingAnalytics,
+    loadingTopContent,
+    fetchAnalytics,
+    fetchTopContent,
+    fetchStatistics,
+    statistics,
+  } = useApp();
 
-                {/*<span className="text-orange-500 text-2xl font-medium italic"> - в разработке</span>*/}
+  useEffect(() => {
+    fetchAnalytics({
+      startDate: dateRange.from,
+      endDate: dateRange.to,
+      platform: selectedNetwork !== "all" ? selectedNetwork : undefined,
+    });
+    fetchTopContent({
+      startDate: dateRange.from,
+      endDate: dateRange.to,
+      limit: 5,
+    });
+    fetchStatistics({
+      startDate: dateRange.from,
+      endDate: dateRange.to,
+      platform: selectedNetwork !== "all" ? selectedNetwork : undefined,
+    });
+  }, [dateRange, selectedNetwork]);
 
-                <h1 className="text-3xl font-bold text-foreground">Аналитика контента</h1>
+  const handleDateRangeChange = (range: { from: Date; to: Date }) => {
+    setDateRange(range);
+  };
 
-                <p className="text-muted-foreground">Отслеживайте эффективность вашего контента в социальных сетях</p>
-            </div>
+  const handleNetworkChange = (network: string) => {
+    setSelectedNetwork(network);
+  };
 
-            {/* Filters */}
-            <AnalyticsFilters
-                dateRange={dateRange}
-                onDateRangeChange={setDateRange}
-                selectedNetwork={selectedNetwork}
-                onNetworkChange={setSelectedNetwork}
-                selectedContent={selectedContent}
-                onContentChange={setSelectedContent}
-            />
+  const handleContentChange = (content: string) => {
+    setSelectedContent(content);
+  };
 
-            {/* Metrics Cards */}
-            <MetricsCards/>
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col space-y-2">
+        <h1 className="text-3xl font-bold text-foreground">
+          Аналитика контента
+        </h1>
+        <p className="text-muted-foreground">
+          Отслеживайте эффективность вашего контента в социальных сетях
+        </p>
+      </div>
 
-            {/* Charts */}
-            <AnalyticsCharts/>
+      <AnalyticsFilters
+        dateRange={dateRange}
+        onDateRangeChange={handleDateRangeChange}
+        selectedNetwork={selectedNetwork}
+        onNetworkChange={handleNetworkChange}
+        selectedContent={selectedContent}
+        onContentChange={handleContentChange}
+      />
 
-            {/* Top Performing Content */}
-            <TopPerformingContent/>
+      <MetricsCards />
 
-            {/* Export Options */}
-            <ExportOptions/>
-        </div>
-    )
+      <AnalyticsCharts
+        analyticsData={analyticsData}
+        statistics={statistics}
+        loading={loadingAnalytics}
+      />
+
+      <TopPerformingContent
+        topContent={topContent}
+        loading={loadingTopContent}
+      />
+
+      <ExportOptions dateRange={dateRange} selectedNetwork={selectedNetwork} />
+    </div>
+  );
 }

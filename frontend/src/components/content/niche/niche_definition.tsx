@@ -14,7 +14,10 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Sparkles, Plus, ArrowRight, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router";
-import {CONTENT_CREATE_ROUTE, CONTENT_ROUTE_COMPETITORS} from "@/utils/CONSTANTS";
+import {
+  CONTENT_CREATE_ROUTE,
+  CONTENT_ROUTE_COMPETITORS,
+} from "@/utils/CONSTANTS";
 import { useContentCreation } from "@/contexts/ContentCreationContext";
 
 export function NicheDefinition() {
@@ -36,7 +39,7 @@ export function NicheDefinition() {
 
   const toggleQuestion = (question: string) => {
     // @ts-ignore
-      setSelectedQuestions((prev) =>
+    setSelectedQuestions((prev) =>
       prev.includes(question)
         ? prev.filter((q: string) => q !== question)
         : [...prev, question]
@@ -155,7 +158,7 @@ export function NicheDefinition() {
                   {customQuestions.map((question, index) => (
                     <div
                       key={index}
-                      className="flex items-center justify-between p-2 bg-muted rounded"
+                      className="flex items-center justify-between p-2 bg-muted rounded-lg"
                     >
                       <span className="text-sm">{question}</span>
                       <Button

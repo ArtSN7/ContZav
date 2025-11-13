@@ -12,105 +12,57 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Camera, Save, User } from "lucide-react";
-import { getAuthToken } from "@/utils/auth";
-import { Loader } from "@/components/loader/loader";
-
-interface ProfileData {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  avatar_url?: string;
-  badges: { variant: "default" | "secondary"; label: string }[];
-}
+import { useApp } from "@/contexts/AppContext";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function AccountDetails() {
   const [isEditing, setIsEditing] = useState(false);
-  const [profileData, setProfileData] = useState<ProfileData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+  });
+
+  const { profileData, loadingProfile, updateProfile, refreshProfile } =
+    useApp();
 
   useEffect(() => {
-    fetchProfileData();
-  }, []);
-
-  const fetchProfileData = async () => {
-    try {
-      const token = getAuthToken();
-      const response = await fetch(
-        "http://localhost:5090/api/account/profile",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to fetch profile");
-
-      const data = await response.json();
-      if (data.success) {
-        setProfileData(transformBackendToFrontend(data.data.user));
-      }
-    } catch (error) {
-      console.error("Error fetching profile:", error);
-    } finally {
-      setLoading(false);
+    if (profileData) {
+      const nameParts = profileData.name?.split(" ") || ["", ""];
+      setFormData({
+        firstName: nameParts[0] || "",
+        lastName: nameParts[1] || "",
+        email: profileData.email || "",
+        phone: profileData.phone || "",
+      });
     }
-  };
-
-  const transformBackendToFrontend = (backendUser: any): ProfileData => ({
-    id: backendUser.id,
-    firstName: backendUser.name?.split(" ")[0] || "",
-    lastName: backendUser.name?.split(" ")[1] || "",
-    email: backendUser.email,
-    phone: backendUser.phone || "",
-    avatar_url: backendUser.avatar_url,
-    badges: [
-      { variant: "default" as const, label: "Pro Plan" },
-      { variant: "secondary" as const, label: "Верифицирован" },
-    ],
-  });
-
-  const transformFrontendToBackend = (frontendData: ProfileData) => ({
-    name: `${frontendData.firstName} ${frontendData.lastName}`.trim(),
-    email: frontendData.email,
-    phone: frontendData.phone,
-  });
+  }, [profileData]);
 
   const handleSave = async () => {
-    if (!profileData) return;
-
     try {
-      const token = getAuthToken();
-      const backendData = transformFrontendToBackend(profileData);
-
-      const response = await fetch(
-        "http://localhost:5090/api/account/profile",
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(backendData),
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to update profile");
-
+      await updateProfile({
+        name: `${formData.firstName} ${formData.lastName}`.trim(),
+        phone: formData.phone,
+      });
       setIsEditing(false);
+      await refreshProfile();
     } catch (error) {
       console.error("Error updating profile:", error);
     }
   };
 
-  const handleInputChange = (field: keyof ProfileData, value: string) => {
-    setProfileData((prev) => (prev ? { ...prev, [field]: value } : null));
+  const handleInputChange = (field: keyof typeof formData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  if (loading) return <Loader />;
-  if (!profileData) return <div>Error loading profile</div>;
+  if (loadingProfile) {
+    return <ProfileSkeleton />;
+  }
+
+  if (!profileData) {
+    return <div>Error loading profile</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -128,8 +80,8 @@ export function AccountDetails() {
               <Avatar className="h-24 w-24">
                 <AvatarImage src={profileData.avatar_url} />
                 <AvatarFallback className="text-lg">
-                  {profileData.firstName[0]}
-                  {profileData.lastName[0]}
+                  {formData.firstName[0]}
+                  {formData.lastName[0]}
                 </AvatarFallback>
               </Avatar>
               <Button
@@ -142,15 +94,12 @@ export function AccountDetails() {
             </div>
             <div className="space-y-2">
               <h3 className="text-xl font-semibold">
-                {profileData.firstName} {profileData.lastName}
+                {formData.firstName} {formData.lastName}
               </h3>
-              <p className="text-muted-foreground">{profileData.email}</p>
+              <p className="text-muted-foreground">{formData.email}</p>
               <div className="flex space-x-2">
-                {profileData.badges.map((badge, index) => (
-                  <Badge key={index} variant={badge.variant}>
-                    {badge.label}
-                  </Badge>
-                ))}
+                <Badge variant="default">Pro Plan</Badge>
+                <Badge variant="secondary">Верифицирован</Badge>
               </div>
             </div>
           </div>
@@ -161,7 +110,7 @@ export function AccountDetails() {
               <Label htmlFor="firstName">Имя</Label>
               <Input
                 id="firstName"
-                value={profileData.firstName}
+                value={formData.firstName}
                 onChange={(e) => handleInputChange("firstName", e.target.value)}
                 disabled={!isEditing}
               />
@@ -170,7 +119,7 @@ export function AccountDetails() {
               <Label htmlFor="lastName">Фамилия</Label>
               <Input
                 id="lastName"
-                value={profileData.lastName}
+                value={formData.lastName}
                 onChange={(e) => handleInputChange("lastName", e.target.value)}
                 disabled={!isEditing}
               />
@@ -180,16 +129,15 @@ export function AccountDetails() {
               <Input
                 id="email"
                 type="email"
-                value={profileData.email}
-                onChange={(e) => handleInputChange("email", e.target.value)}
-                disabled={true} // Email нельзя менять
+                value={formData.email}
+                disabled={true}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">Телефон</Label>
               <Input
                 id="phone"
-                value={profileData.phone}
+                value={formData.phone}
                 onChange={(e) => handleInputChange("phone", e.target.value)}
                 disabled={!isEditing}
               />
@@ -214,6 +162,44 @@ export function AccountDetails() {
                 Редактировать
               </Button>
             )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// Skeleton component for loading state
+function ProfileSkeleton() {
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-48" />
+          <Skeleton className="h-4 w-64" />
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center space-x-6">
+            <Skeleton className="h-24 w-24 rounded-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-48" />
+              <Skeleton className="h-4 w-32" />
+              <div className="flex space-x-2">
+                <Skeleton className="h-6 w-16" />
+                <Skeleton className="h-6 w-20" />
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-end">
+            <Skeleton className="h-10 w-32" />
           </div>
         </CardContent>
       </Card>

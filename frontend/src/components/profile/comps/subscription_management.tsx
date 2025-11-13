@@ -1,6 +1,3 @@
-"use client";
-
-import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -19,96 +16,61 @@ import {
   Download,
   AlertTriangle,
 } from "lucide-react";
-import { api } from "@/utils/api";
-import { Loader } from "@/components/loader/loader";
-
-interface SubscriptionData {
-  plan: string;
-  price: number;
-  billingCycle: string;
-  nextBilling: string;
-  status: string;
-  usage: {
-    videosUsed: number;
-    videosLimit: number;
-    networksUsed: number;
-    networksLimit: number;
-  };
-  billingHistory: Array<{
-    date: string;
-    amount: number;
-    status: string;
-    invoice: string;
-  }>;
-}
+import { useApp } from "@/contexts/AppContext";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function SubscriptionManagement() {
-  const [subscriptionData, setSubscriptionData] =
-    useState<SubscriptionData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const {
+    subscriptionData,
+    loadingSubscription,
+    cancelSubscription,
+    refreshSubscription,
+  } = useApp();
 
-  useEffect(() => {
-    fetchSubscriptionData();
-  }, []);
-
-  const fetchSubscriptionData = async () => {
+  const handleCancelSubscription = async () => {
     try {
-      // Правильный запрос к эндпоинту подписок
-      const data = await api.get("/account/subscription");
-
-      if (data.success) {
-        setSubscriptionData(data.data);
-      }
+      await cancelSubscription();
+      await refreshSubscription();
     } catch (error) {
-      console.error("Error fetching subscription:", error);
-    } finally {
-      setLoading(false);
+      console.error("Error cancelling subscription:", error);
     }
   };
 
-  // Временно используем мок данные если API не готово
-  const getMockSubscriptionData = (): SubscriptionData => ({
-    plan: "Pro",
-    price: 5990,
-    billingCycle: "monthly",
-    nextBilling: "15 января 2025",
-    status: "active",
-    usage: {
-      videosUsed: 32,
-      videosLimit: 50,
-      networksUsed: 5,
-      networksLimit: 10,
-    },
-    billingHistory: [
-      {
-        date: "15.12.2024",
-        amount: 5990,
-        status: "paid",
-        invoice: "INV-001234",
-      },
-      {
-        date: "15.11.2024",
-        amount: 5990,
-        status: "paid",
-        invoice: "INV-001233",
-      },
-      {
-        date: "15.10.2024",
-        amount: 5990,
-        status: "paid",
-        invoice: "INV-001232",
-      },
-    ],
-  });
+  if (loadingSubscription) {
+    return <SubscriptionSkeleton />;
+  }
 
-  if (loading) return <Loader />;
+  if (!subscriptionData) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center text-muted-foreground">
+            Не удалось загрузить данные подписки
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
-  // Временно используем мок данные
-  const data = subscriptionData || getMockSubscriptionData();
+  const safeUsage = subscriptionData.usage || {
+    videosUsed: 0,
+    videosLimit: 10,
+    networksUsed: 0,
+    networksLimit: 3,
+  };
+
+  const videosProgress =
+    safeUsage.videosLimit > 0
+      ? (safeUsage.videosUsed / safeUsage.videosLimit) * 100
+      : 0;
+
+  const networksProgress =
+    safeUsage.networksLimit > 0
+      ? (safeUsage.networksUsed / safeUsage.networksLimit) * 100
+      : 0;
 
   return (
     <div className="space-y-6">
-      {/* Остальной JSX остается таким же, но используем data */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
@@ -122,16 +84,20 @@ export function SubscriptionManagement() {
         <CardContent className="space-y-6">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <h3 className="text-2xl font-bold">{data.plan} Plan</h3>
+              <h3 className="text-2xl font-bold">
+                {subscriptionData.plan || "Free"} Plan
+              </h3>
               <p className="text-muted-foreground">
-                {data.price.toLocaleString()} ₽/
-                {data.billingCycle === "monthly" ? "месяц" : "год"}
+                {(subscriptionData.price || 0).toLocaleString()} ₽/
+                {subscriptionData.billingCycle === "monthly" ? "месяц" : "год"}
               </p>
             </div>
             <Badge
-              variant={data.status === "active" ? "default" : "destructive"}
+              variant={
+                subscriptionData.status === "active" ? "default" : "destructive"
+              }
             >
-              {data.status === "active" ? "Активна" : "Неактивна"}
+              {subscriptionData.status === "active" ? "Активна" : "Неактивна"}
             </Badge>
           </div>
 
@@ -145,31 +111,20 @@ export function SubscriptionManagement() {
                 <div className="flex justify-between text-sm">
                   <span>Видео/посты</span>
                   <span>
-                    {data.usage.videosUsed} из {data.usage.videosLimit}
+                    {safeUsage.videosUsed} из {safeUsage.videosLimit}
                   </span>
                 </div>
-                <Progress
-                  value={(data.usage.videosUsed / data.usage.videosLimit) * 100}
-                  className="h-2"
-                />
+                <Progress value={videosProgress} className="h-2" />
               </div>
 
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>Социальные сети</span>
                   <span>
-                    {subscriptionData?.usage.networksUsed} из{" "}
-                    {subscriptionData?.usage.networksLimit}
+                    {safeUsage.networksUsed} из {safeUsage.networksLimit}
                   </span>
                 </div>
-                <Progress
-                  value={
-                    (subscriptionData?.usage.networksUsed /
-                      subscriptionData?.usage.networksLimit) *
-                    100
-                  }
-                  className="h-2"
-                />
+                <Progress value={networksProgress} className="h-2" />
               </div>
             </div>
           </div>
@@ -181,7 +136,10 @@ export function SubscriptionManagement() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div className="flex items-center space-x-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span>Следующий платеж: {subscriptionData?.nextBilling}</span>
+                <span>
+                  Следующий платеж:{" "}
+                  {subscriptionData.nextBilling || "Не указан"}
+                </span>
               </div>
               <div className="flex items-center space-x-2">
                 <CreditCard className="h-4 w-4 text-muted-foreground" />
@@ -237,43 +195,6 @@ export function SubscriptionManagement() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>История платежей</CardTitle>
-          <CardDescription>
-            Последние транзакции по вашему аккаунту
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {subscriptionData?.billingHistory.map((payment, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-3 border border-border rounded-lg"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <div>
-                    <p className="text-sm font-medium">
-                      {payment.amount.toLocaleString()} ₽
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {payment.date}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Badge variant="secondary">{payment.invoice}</Badge>
-                  <Button variant="ghost" size="sm">
-                    <Download className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
       <Card className="border-destructive">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2 text-destructive">
@@ -292,7 +213,87 @@ export function SubscriptionManagement() {
                 Подписка будет отменена в конце текущего периода
               </p>
             </div>
-            <Button variant="destructive">Отменить</Button>
+            <Button variant="destructive" onClick={handleCancelSubscription}>
+              Отменить
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function SubscriptionSkeleton() {
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-48" />
+          <Skeleton className="h-4 w-64" />
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Skeleton className="h-8 w-32" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+            <Skeleton className="h-6 w-20" />
+          </div>
+          <Separator />
+          <div className="space-y-4">
+            <Skeleton className="h-5 w-40" />
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-16" />
+                </div>
+                <Skeleton className="h-2 w-full" />
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-16" />
+                </div>
+                <Skeleton className="h-2 w-full" />
+              </div>
+            </div>
+          </div>
+          <Separator />
+          <div className="space-y-3">
+            <Skeleton className="h-5 w-40" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-full" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-48" />
+          <Skeleton className="h-4 w-64" />
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-24 w-full" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-48" />
+          <Skeleton className="h-4 w-64" />
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-16 w-full" />
+            ))}
           </div>
         </CardContent>
       </Card>

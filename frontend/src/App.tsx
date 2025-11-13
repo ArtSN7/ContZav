@@ -12,6 +12,7 @@ import {
   CONTENT_ROUTE_COMPETITORS,
   CONTENT_ROUTE_VIDEO_PREVIEW,
   SUCCESS_PAGE_ROUTE,
+  CONTENT_ROUTE_AVATAR_CREATE,
 } from "./utils/CONSTANTS.ts";
 
 import { AuthPage } from "./components/auth/auth.tsx";
@@ -26,33 +27,42 @@ import AvatarPage from "@/components/content/avatar/main.tsx";
 import CompetitorsPage from "@/components/content/competitors/main.tsx";
 import VideoPreviewPage from "@/components/content/video_preview/main.tsx";
 import SuccessPage from "@/components/utils_for_components/success_window.tsx";
+
 import { AuthProvider } from "./contexts/AuthContext.tsx";
+import { AppProvider } from "./contexts/AppContext.tsx";
+import { CreateAvatar } from "./components/avatar/main.tsx";
 
 function App() {
   return (
     <Router>
       <AuthProvider>
-        <Routes>
-          <Route path={"/"} element={<AuthPage />} />
-          <Route path={AUTH_ROUTE} element={<AuthPage />} />
-          <Route path={DASHBOARD_ROUTE} element={<DashboardPage />} />
-          <Route path={ANALYTICS_ROUTE} element={<AnalyticsPage />} />
-          <Route path={PROFILE_ROUTE} element={<ProfilePage />} />
-          <Route path={CONTENT_CREATE_ROUTE} element={<ContentPage />} />
-          <Route path={CONTENT_ROUTE_PLANNING} element={<PlanningPage />} />
-          <Route path={CONTENT_ROUTE_NICHE} element={<NichePage />} />
-          <Route path={CONTENT_ROUTE_SCRIPT} element={<ScriptPage />} />
-          <Route path={CONTENT_ROUTE_AVATAR} element={<AvatarPage />} />
-          <Route
-            path={CONTENT_ROUTE_COMPETITORS}
-            element={<CompetitorsPage />}
-          />
-          <Route
-            path={CONTENT_ROUTE_VIDEO_PREVIEW}
-            element={<VideoPreviewPage />}
-          />
-          <Route path={SUCCESS_PAGE_ROUTE} element={<SuccessPage />} />
-        </Routes>
+        <AppProvider>
+          <Routes>
+            <Route path={"/"} element={<AuthPage />} />
+            <Route path={AUTH_ROUTE} element={<AuthPage />} />
+            <Route path={DASHBOARD_ROUTE} element={<DashboardPage />} />
+            <Route path={ANALYTICS_ROUTE} element={<AnalyticsPage />} />
+            <Route path={PROFILE_ROUTE} element={<ProfilePage />} />
+            <Route path={CONTENT_CREATE_ROUTE} element={<ContentPage />} />
+            <Route path={CONTENT_ROUTE_PLANNING} element={<PlanningPage />} />
+            <Route path={CONTENT_ROUTE_NICHE} element={<NichePage />} />
+            <Route path={CONTENT_ROUTE_SCRIPT} element={<ScriptPage />} />
+            <Route path={CONTENT_ROUTE_AVATAR} element={<AvatarPage />} />
+            <Route
+              path={CONTENT_ROUTE_AVATAR_CREATE}
+              element={<CreateAvatar />}
+            />
+            <Route
+              path={CONTENT_ROUTE_COMPETITORS}
+              element={<CompetitorsPage />}
+            />
+            <Route
+              path={CONTENT_ROUTE_VIDEO_PREVIEW}
+              element={<VideoPreviewPage />}
+            />
+            <Route path={SUCCESS_PAGE_ROUTE} element={<SuccessPage />} />
+          </Routes>
+        </AppProvider>
       </AuthProvider>
     </Router>
   );

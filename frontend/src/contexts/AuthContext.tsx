@@ -7,12 +7,14 @@ import React, {
 } from "react";
 import { useNavigate } from "react-router";
 import { PROFILE_ROUTE, AUTH_ROUTE } from "@/utils/CONSTANTS.ts";
+import { api } from "@/utils/api";
 
 interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (userData: any) => Promise<void>;
+  refreshAuthToken: () => Promise<boolean>;
   logout: () => void;
   loading: boolean;
   error: string | null;
@@ -60,25 +62,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setError(null);
 
     try {
-      const response = await fetch("http://localhost:5090/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      const response = await api.post("/auth/login", { email, password });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Login failed");
-      }
-
-      if (data.success && data.data.accessToken) {
-        setAuthToken(data.data.accessToken);
+      if (response.success && response.data.accessToken) {
+        setAuthToken(response.data.accessToken);
         navigate(PROFILE_ROUTE);
+      } else {
+        throw new Error(response.error || "Login failed");
       }
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message || "Login failed");
     } finally {
       setLoading(false);
@@ -90,37 +82,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setError(null);
 
     try {
-      const response = await fetch("http://localhost:5090/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(userData),
-      });
+      const response = await api.post("/auth/register", userData);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Registration failed");
-      }
-
-      if (data.success && data.data.accessToken) {
-        setAuthToken(data.data.accessToken);
+      if (response.success && response.data.accessToken) {
+        setAuthToken(response.data.accessToken);
         navigate(PROFILE_ROUTE);
+      } else {
+        throw new Error(response.error || "Registration failed");
       }
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message || "Registration failed");
     } finally {
       setLoading(false);
     }
   };
 
+  const refreshAuthToken = async (): Promise<boolean> => {
+    try {
+      const response = await api.post("/auth/refresh");
+
+      if (response.success && response.data.accessToken) {
+        setAuthToken(response.data.accessToken);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error("Token refresh failed:", err);
+      clearAuthToken();
+      return false;
+    }
+  };
+
   const logout = async () => {
     try {
-      await fetch("http://localhost:5090/api/auth/logout", {
-        method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+      await api.post("/auth/logout");
     } catch (err) {
       console.error("Logout error:", err);
     } finally {
@@ -150,11 +145,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [navigate]);
 
+  useEffect(() => {
+    const initializeApiIntegration = async () => {
+      const { setAuthContextFunctions } = await import("@/utils/api");
+      setAuthContextFunctions(refreshAuthToken, logout);
+    };
+
+    initializeApiIntegration();
+  }, [refreshAuthToken, logout]);
+
   const value: AuthContextType = {
     token,
     isAuthenticated,
     login,
     register,
+    refreshAuthToken,
     logout,
     loading,
     error,

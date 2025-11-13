@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
+import { api } from "@/utils/api";
 
 interface ContentCreationContextType {
   niche: string;
@@ -60,62 +61,42 @@ export const ContentCreationProvider: React.FC<
 
     setLoading(true);
     try {
-      const token = localStorage.getItem("auth_token");
-      const response = await fetch(
-        "http://localhost:5090/api/ai/generate-questions/mock",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ niche, contentType }),
-        }
-      );
+      const response = await api.post("/ai/questions", { niche, contentType });
 
-      console.log(response);
-
-      if (!response.ok) throw new Error("Failed to generate questions");
-
-      const data = await response.json();
-      setQuestions(data.questions);
-      setSelectedQuestions(data.questions);
+      if (response.success) {
+        setQuestions(response.data.questions || []);
+        setSelectedQuestions(response.data.questions || []);
+      } else {
+        throw new Error("Failed to generate questions");
+      }
     } catch (error) {
       console.error("Error generating questions:", error);
+      setQuestions([]);
+      setSelectedQuestions([]);
     } finally {
       setLoading(false);
     }
   };
 
   const generateContent = async () => {
-    if (!niche.trim() || selectedQuestions.length === 0) return;
-
     setLoading(true);
     try {
-      const token = localStorage.getItem("auth_token");
-      const response = await fetch(
-        "http://localhost:5090/api/ai/generate-content/mock",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            niche,
-            contentType,
-            selectedQuestions: [...selectedQuestions, ...customQuestions],
-          }),
-        }
-      );
+      const response = await api.post("/ai/content", {
+        niche,
+        contentType,
+        selectedQuestions: [...selectedQuestions, ...customQuestions],
+      });
 
-      if (!response.ok) throw new Error("Failed to generate content");
-
-      const content = await response.json();
-      setScript(content.script);
-      setVideoUrl(content.video_url);
+      if (response.success) {
+        setScript(response.data.script || "");
+        setVideoUrl(response.data.video_url || "");
+      } else {
+        throw new Error("Failed to generate content");
+      }
     } catch (error) {
       console.error("Error generating content:", error);
+      setScript("");
+      setVideoUrl("");
     } finally {
       setLoading(false);
     }

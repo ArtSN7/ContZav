@@ -1,6 +1,4 @@
-"use client";
-
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -22,115 +20,71 @@ import {
   AlertTriangle,
   Eye,
   EyeOff,
+  Save,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { api } from "@/utils/api";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader } from "@/components/loader/loader";
-
-interface SecurityData {
-  twoFactorEnabled: boolean;
-  activeSessions: Array<{
-    device: string;
-    location: string;
-    current: boolean;
-    lastActive: string;
-  }>;
-}
+import { useApp } from "@/contexts/AppContext";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function SecuritySettings() {
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [passwordData, setPasswordData] = useState({
-    current: "",
-    new: "",
-    confirm: "",
+  const [showHeyGenKey, setShowHeyGenKey] = useState(false);
+  const [apiKeysData, setApiKeysData] = useState({
+    heygen_api_key: "",
   });
-  const [securityData, setSecurityData] = useState<SecurityData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [changingPassword, setChangingPassword] = useState(false);
+  const [savingApiKeys, setSavingApiKeys] = useState(false);
   const navigate = useNavigate();
   const { logout } = useAuth();
-
-  useEffect(() => {
-    fetchSecurityData();
-  }, []);
-
-  const fetchSecurityData = async () => {
-    try {
-      // Используем правильный эндпоинт для безопасности
-      const data = await api.get("/profile");
-
-      if (data.success) {
-        setSecurityData(data.data.security);
-      }
-    } catch (error) {
-      console.error("Error fetching security data:", error);
-      // Fallback на мок данные если API не готово
-      setSecurityData(getMockSecurityData());
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePasswordChange = async () => {
-    if (passwordData.new !== passwordData.confirm) {
-      alert("Новые пароли не совпадают");
-      return;
-    }
-
-    setChangingPassword(true);
-    try {
-      await api.put("/profile/password", {
-        currentPassword: passwordData.current,
-        newPassword: passwordData.new,
-      });
-
-      alert("Пароль успешно изменен");
-      setPasswordData({ current: "", new: "", confirm: "" });
-    } catch (error: any) {
-      console.error("Error changing password:", error);
-      alert(error.message || "Ошибка при изменении пароля");
-    } finally {
-      setChangingPassword(false);
-    }
-  };
+  const {
+    securityData,
+    loadingSecurity,
+    toggle2FA,
+    terminateSession,
+    terminateAllSessions,
+    apiKeys,
+    loadingApiKeys,
+    updateApiKeys,
+  } = useApp();
 
   const handleToggle2FA = async (enabled: boolean) => {
     try {
-      if (enabled) {
-        await api.post("/profile/2fa/enable");
-      } else {
-        await api.post("/profile/2fa/disable");
-      }
-
-      setSecurityData((prev) =>
-        prev
-          ? {
-              ...prev,
-              twoFactorEnabled: enabled,
-            }
-          : null
-      );
-
+      await toggle2FA(enabled);
       alert(
         `Двухфакторная аутентификация ${enabled ? "включена" : "выключена"}`
       );
-    } catch (error) {
-      console.error("Error toggling 2FA:", error);
-      alert("Ошибка при изменении настроек 2FA");
+    } catch (error: any) {
+      alert(error.message);
     }
   };
 
   const handleTerminateSession = async (sessionId: string) => {
     try {
-      await api.delete(`/profile/sessions/${sessionId}`);
-      // Обновляем данные после завершения сессии
-      fetchSecurityData();
+      await terminateSession(sessionId);
       alert("Сессия завершена");
-    } catch (error) {
-      console.error("Error terminating session:", error);
-      alert("Ошибка при завершении сессии");
+    } catch (error: any) {
+      alert(error.message);
+    }
+  };
+
+  const handleTerminateAllSessions = async () => {
+    try {
+      await terminateAllSessions();
+      alert("Все сессии завершены");
+    } catch (error: any) {
+      alert(error.message);
+    }
+  };
+
+  const handleSaveApiKeys = async () => {
+    setSavingApiKeys(true);
+    try {
+      await updateApiKeys(apiKeysData);
+      alert("API ключ успешно сохранен!");
+      setApiKeysData({ heygen_api_key: "" });
+    } catch (error: any) {
+      alert(error.message);
+    } finally {
+      setSavingApiKeys(false);
     }
   };
 
@@ -154,7 +108,6 @@ export function SecuritySettings() {
     }
 
     try {
-      // Здесь должен быть вызов API для удаления аккаунта
       console.log("Account deletion requested");
       alert("Запрос на удаление аккаунта отправлен");
     } catch (error) {
@@ -163,35 +116,14 @@ export function SecuritySettings() {
     }
   };
 
-  // Временные мок данные
-  const getMockSecurityData = (): SecurityData => ({
-    twoFactorEnabled: true,
-    activeSessions: [
-      {
-        device: "MacBook Pro",
-        location: "Москва, Россия",
-        current: true,
-        lastActive: "Сейчас",
-      },
-      {
-        device: "iPhone 15",
-        location: "Москва, Россия",
-        current: false,
-        lastActive: "2 часа назад",
-      },
-      {
-        device: "Chrome на Windows",
-        location: "Санкт-Петербург, Россия",
-        current: false,
-        lastActive: "1 день назад",
-      },
-    ],
-  });
+  if (loadingSecurity || loadingApiKeys) {
+    return <SecuritySkeleton />;
+  }
 
-  if (loading) return <Loader />;
-
-  // Используем реальные или мок данные
-  const data = securityData || getMockSecurityData();
+  const safeSecurityData = securityData || {
+    twoFactorEnabled: false,
+    activeSessions: [],
+  };
 
   return (
     <div className="space-y-6">
@@ -216,7 +148,7 @@ export function SecuritySettings() {
                   Двухфакторная аутентификация
                 </p>
                 <Badge variant="default" className="text-xs">
-                  {data.twoFactorEnabled ? "Включена" : "Выключена"}
+                  {safeSecurityData.twoFactorEnabled ? "Включена" : "Выключена"}
                 </Badge>
               </div>
             </div>
@@ -240,7 +172,7 @@ export function SecuritySettings() {
               <div>
                 <p className="text-sm font-medium">Активные сессии</p>
                 <Badge variant="secondary" className="text-xs">
-                  {data.activeSessions.length} устройств
+                  {safeSecurityData.activeSessions.length} устройств
                 </Badge>
               </div>
             </div>
@@ -248,100 +180,57 @@ export function SecuritySettings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card data-slot="card">
         <CardHeader>
-          <CardTitle>Изменение пароля</CardTitle>
+          <CardTitle>API Ключи</CardTitle>
           <CardDescription>
-            Обновите пароль для повышения безопасности аккаунта
+            Укажите ваш API ключ для работы с HeyGen
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="current-password">Текущий пароль</Label>
-            <div className="relative">
-              <Input
-                id="current-password"
-                type={showCurrentPassword ? "text" : "password"}
-                value={passwordData.current}
-                onChange={(e) =>
-                  setPasswordData((prev) => ({
-                    ...prev,
-                    current: e.target.value,
-                  }))
-                }
-                placeholder="Введите текущий пароль"
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
-                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-              >
-                {showCurrentPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </Button>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="heygen-api-key">HeyGen API Key</Label>
+              <div className="relative">
+                <Input
+                  id="heygen-api-key"
+                  type={showHeyGenKey ? "text" : "password"}
+                  value={apiKeysData.heygen_api_key || apiKeys.heygen_api_key}
+                  onChange={(e) =>
+                    setApiKeysData((prev) => ({
+                      ...prev,
+                      heygen_api_key: e.target.value,
+                    }))
+                  }
+                  placeholder="Введите ваш HeyGen API ключ"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
+                  onClick={() => setShowHeyGenKey(!showHeyGenKey)}
+                >
+                  {showHeyGenKey ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Получите в личном кабинете HeyGen. Необходим для генерации видео
+                с аватарами.
+              </p>
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="new-password">Новый пароль</Label>
-            <div className="relative">
-              <Input
-                id="new-password"
-                type={showNewPassword ? "text" : "password"}
-                value={passwordData.new}
-                onChange={(e) =>
-                  setPasswordData((prev) => ({ ...prev, new: e.target.value }))
-                }
-                placeholder="Введите новый пароль"
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
-                onClick={() => setShowNewPassword(!showNewPassword)}
-              >
-                {showNewPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="confirm-password">Подтвердите новый пароль</Label>
-            <Input
-              id="confirm-password"
-              type="password"
-              value={passwordData.confirm}
-              onChange={(e) =>
-                setPasswordData((prev) => ({
-                  ...prev,
-                  confirm: e.target.value,
-                }))
-              }
-              placeholder="Повторите новый пароль"
-            />
           </div>
 
           <Button
-            onClick={handlePasswordChange}
-            disabled={
-              !passwordData.current ||
-              !passwordData.new ||
-              passwordData.new !== passwordData.confirm ||
-              changingPassword
-            }
+            onClick={handleSaveApiKeys}
+            disabled={savingApiKeys || !apiKeysData.heygen_api_key}
           >
-            <Key className="mr-2 h-4 w-4" />
-            {changingPassword ? "Изменение..." : "Изменить пароль"}
+            <Save className="mr-2 h-4 w-4" />
+            {savingApiKeys ? "Сохранение..." : "Сохранить API ключ"}
           </Button>
         </CardContent>
       </Card>
@@ -362,7 +251,7 @@ export function SecuritySettings() {
               </p>
             </div>
             <Switch
-              checked={data.twoFactorEnabled}
+              checked={safeSecurityData.twoFactorEnabled}
               onCheckedChange={handleToggle2FA}
             />
           </div>
@@ -377,7 +266,7 @@ export function SecuritySettings() {
               </p>
             </div>
             <Switch
-              checked={data.twoFactorEnabled}
+              checked={safeSecurityData.twoFactorEnabled}
               onCheckedChange={handleToggle2FA}
             />
           </div>
@@ -405,9 +294,9 @@ export function SecuritySettings() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {data.activeSessions.map((session, index) => (
+            {safeSecurityData.activeSessions.map((session, index) => (
               <div
-                key={index}
+                key={session.id || index}
                 className="flex items-center justify-between p-3 border border-border rounded-lg"
               >
                 <div className="flex items-center space-x-3">
@@ -434,7 +323,7 @@ export function SecuritySettings() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleTerminateSession(`session-${index}`)}
+                    onClick={() => handleTerminateSession(session.id)}
                   >
                     Завершить
                   </Button>
@@ -442,6 +331,14 @@ export function SecuritySettings() {
               </div>
             ))}
           </div>
+
+          {safeSecurityData.activeSessions.length > 1 && (
+            <div className="mt-4 pt-4 border-t">
+              <Button variant="outline" onClick={handleTerminateAllSessions}>
+                Завершить все сессии
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -480,6 +377,43 @@ export function SecuritySettings() {
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function SecuritySkeleton() {
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-48" />
+          <Skeleton className="h-4 w-64" />
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-20 w-full" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Card key={i}>
+          <CardHeader>
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-64" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {Array.from({ length: 3 }).map((_, j) => (
+                <Skeleton key={j} className="h-10 w-full" />
+              ))}
+              <Skeleton className="h-10 w-32" />
+            </div>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }
