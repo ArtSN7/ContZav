@@ -28,10 +28,8 @@ export class AuthService {
         let isNewUser = false;
 
         if (!user) {
-            const password = randomBytes(32).toString('hex');
             user = new User({
                 email: profile.email,
-                password_hash: password,
                 name: profile.name,
                 avatar_url: profile.picture,
                 email_verified: true
@@ -59,7 +57,8 @@ export class AuthService {
                 access_token: tokens.access_token,
                 refresh_token: tokens.refresh_token,
                 expires_at: expiresAt,
-                profile_data: profile
+                profile_data: profile,
+                is_connected: true
             },
             { upsert: true, new: true }
         );
@@ -67,7 +66,7 @@ export class AuthService {
         const accessToken = TokenService.generateAccessToken((user._id as Types.ObjectId).toString(), user.email);
         const refreshToken = TokenService.generateRefreshToken((user._id as Types.ObjectId).toString());
 
-        return { user, accessToken, refreshToken, isNewUser };
+        return { accessToken, refreshToken, isNewUser };
     }
 
     static async refreshToken(refreshToken: string) {
@@ -86,44 +85,5 @@ export class AuthService {
         } catch (error) {
             throw new AppError('Invalid refresh token', 401);
         }
-    }
-
-    static async login(email: string, password: string) {
-        const user = await User.findOne({ email });
-        if (!user) {
-            throw new AppError('Invalid credentials', 401);
-        }
-
-        const isPasswordValid = await user.comparePassword(password);
-        if (!isPasswordValid) {
-            throw new AppError('Invalid credentials', 401);
-        }
-
-        user.last_login = new Date();
-        await user.save();
-
-        const accessToken = TokenService.generateAccessToken((user._id as Types.ObjectId).toString(), user.email);
-        const refreshToken = TokenService.generateRefreshToken((user._id as Types.ObjectId).toString());
-
-        return { user, accessToken, refreshToken };
-    }
-
-    static async register(email: string, password: string, name: string) {
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            throw new AppError('User already exists', 400);
-        }
-
-        const user = new User({
-            email,
-            password_hash: password,
-            name
-        });
-        await user.save();
-
-        const accessToken = TokenService.generateAccessToken((user._id as Types.ObjectId).toString(), user.email);
-        const refreshToken = TokenService.generateRefreshToken((user._id as Types.ObjectId).toString());
-
-        return { user, accessToken, refreshToken };
     }
 }

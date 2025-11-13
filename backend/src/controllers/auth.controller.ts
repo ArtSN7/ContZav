@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from 'express';
-import { User } from '../models/User.js';
 import { OAuthService } from '../services/oauth.service.js';
 import { generateState, getGoogleAuthUrl, getVKAuthUrl, getYandexAuthUrl } from '../utils/oauth.utils.js';
 import { AppError } from '../exceptions/AppError.js';
@@ -20,107 +19,10 @@ export class AuthController {
         }
     }
 
-    static async getProfileMock(req: Request, res: Response, next: NextFunction): Promise<void> {
-        try {
-            const mockUser = {
-                id: "12345",
-                name: "Артем Сорокин",
-                email: "artem.17sn@gmail.com",
-                phone: "+7 (999) 123-45-67",
-                avatar_url: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face"
-            };
-
-            const mockSocialAccounts = [
-                {
-                    provider: "youtube",
-                    connected: true,
-                    username: "@stroymaterials",
-                    followers: "12.5K",
-                    lastSync: "2 часа назад"
-                },
-                { provider: "instagram", connected: false, username: "@stroymaterials_ru", followers: "", lastSync: "" },
-                { provider: "vk", connected: false, username: "stroymaterials", followers: "", lastSync: "" },
-                {
-                    provider: "telegram",
-                    connected: true,
-                    username: "@stroymaterials_channel",
-                    followers: "3.4K",
-                    lastSync: "5 минут назад"
-                },
-                { provider: "tiktok", connected: true, username: "", followers: "8.9K", lastSync: "1 час назад" },
-                { provider: "facebook", connected: false, username: "", followers: "", lastSync: "" }
-            ];
-
-            const mockSubscription = {
-                plan: "Pro",
-                price: 5990,
-                billingCycle: "monthly",
-                nextBilling: "15 января 2025",
-                status: "active",
-                usage: {
-                    videosUsed: 32,
-                    videosLimit: 50,
-                    networksUsed: 5,
-                    networksLimit: 10
-                },
-                billingHistory: [
-                    { date: "15.12.2024", amount: 5990, status: "paid", invoice: "INV-001234" },
-                    { date: "15.11.2024", amount: 5990, status: "paid", invoice: "INV-001233" },
-                    { date: "15.10.2024", amount: 5990, status: "paid", invoice: "INV-001232" }
-                ]
-            };
-
-            const mockSecurity = {
-                twoFactorEnabled: true,
-                activeSessions: [
-                    { device: "MacBook Pro", location: "Москва, Россия", current: true, lastActive: "Сейчас" },
-                    { device: "iPhone 15", location: "Москва, Россия", current: false, lastActive: "2 часа назад" },
-                    {
-                        device: "Chrome на Windows",
-                        location: "Санкт-Петербург, Россия",
-                        current: false,
-                        lastActive: "1 день назад"
-                    }
-                ]
-            };
-
-            res.json({
-                success: true,
-                data: {
-                    user: mockUser,
-                    socialAccounts: mockSocialAccounts,
-                    subscription: mockSubscription,
-                    security: mockSecurity
-                },
-            });
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    static async getProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
-        try {
-            if (!req.user) throw new AppError('Unauthorized', 401);
-
-            const user = await User.findById(req.user.id);
-            if (!user) throw new AppError('User not found', 404);
-
-            res.json({
-                success: true,
-                data: { user },
-            });
-        } catch (error) {
-            next(error);
-        }
-    }
-
     static async googleAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const state = generateState();
-            logger.info(`Generated state for Google OAuth: ${state}`);
             const authUrl = getGoogleAuthUrl(state);
-
-            logger.info(`Generated Google auth URL: ${authUrl}`);
 
             res.json({
                 success: true,
@@ -243,8 +145,11 @@ export class AuthController {
 
     static async refreshToken(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
+            console.log("here");
             const { refreshToken } = req.cookies;
             if (!refreshToken) throw new AppError('Refresh token required', 401);
+
+            console.log({ refreshToken })
 
             const result = await AuthService.refreshToken(refreshToken);
 
@@ -261,56 +166,6 @@ export class AuthController {
                     accessToken: result.accessToken
                 },
                 message: 'Token refreshed successfully',
-            });
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    static async login(req: Request, res: Response, next: NextFunction): Promise<void> {
-        try {
-            const { email, password } = req.body;
-            const result = await AuthService.login(email, password);
-
-            res.cookie('refreshToken', result.refreshToken, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax',
-                maxAge: 30 * 24 * 60 * 60 * 1000
-            });
-
-            res.json({
-                success: true,
-                data: {
-                    user: result.user,
-                    accessToken: result.accessToken
-                },
-                message: 'Login successful'
-            });
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    static async register(req: Request, res: Response, next: NextFunction): Promise<void> {
-        try {
-            const { email, password, name } = req.body;
-            const result = await AuthService.register(email, password, name);
-
-            res.cookie('refreshToken', result.refreshToken, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax',
-                maxAge: 30 * 24 * 60 * 60 * 1000
-            });
-
-            res.status(201).json({
-                success: true,
-                data: {
-                    user: result.user,
-                    accessToken: result.accessToken
-                },
-                message: 'Registration successful'
             });
         } catch (error) {
             next(error);

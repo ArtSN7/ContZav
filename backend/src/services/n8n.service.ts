@@ -1,79 +1,60 @@
 import axios from 'axios';
-import { config } from '../config/index.js';
 import { logger } from '../utils/logger.js';
 
 export class N8nService {
-    static async getWorkflowStatus(workflowId: string): Promise<any> {
+    static async generateQuestions(answers: any): Promise<any> {
+        const n8nUrl = 'https://nashnmain8n.ru/webhook/c6e0598a-89f3-48a6-a6bc-fde88548cc04';
+
         try {
-            const response = await axios.get(
-                `${config.N8N_URL}/api/v1/workflows/${workflowId}/executions`,
-                {
-                    headers: {
-                        'X-N8N-API-KEY': config.N8N_API_KEY
-                    }
+            const queryParams = new URLSearchParams();
+            Object.keys(answers).forEach(key => {
+                if (answers[key] !== undefined && answers[key] !== null) {
+                    queryParams.append(key, String(answers[key]));
                 }
-            );
+            });
 
-            return response.data;
-        } catch (error: any) {
-            logger.error(`Failed to get workflow status ${workflowId}:`, error);
-            throw error;
-        }
-    }
+            logger.info(`Sending GET request to n8n: ${n8nUrl}?${queryParams.toString()}`);
 
-    static async triggerWorkflow(workflowName: string, data: any): Promise<void> {
-        try {
-            const response = await axios.post(
-                `${config.N8N_URL}/webhook/${workflowName}`,
-                data,
-                {
-                    headers: {
-                        'X-N8N-API-KEY': config.N8N_API_KEY,
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
+            const getResponse = await axios.get(`${n8nUrl}?${queryParams.toString()}`, {
+                timeout: 30000,
+                validateStatus: (status) => status < 500
+            });
 
-            logger.info(`N8N workflow ${workflowName} triggered successfully`);
-        } catch (error: any) {
-            logger.error(`Failed to trigger N8N workflow ${workflowName}:`, error);
-            throw error;
-        }
-    }
+            if (getResponse.data) {
+                logger.info('Successfully received response from n8n via GET');
+                return getResponse.data;
+            }
 
-    static async updateGenerationStatus(requestId: string, status: string, result?: any, error?: string): Promise<void> {
-        try {
-            await axios.post(
-                `${config.N8N_URL}/webhook/generation-status`,
-                { requestId, status, result, error },
-                {
-                    headers: {
-                        'X-N8N-API-KEY': config.N8N_API_KEY
-                    }
-                }
-            );
-        } catch (error: any) {
-            logger.error('Failed to update generation status:', error);
-        }
-    }
+        } catch (getError: any) {
+            logger.warn('GET request failed, trying POST:', getError.message);
 
-    static async generateQuestions(answers: any): Promise<string> {
-        try {
-            const response = await axios.post(
-                'https://nashnmain8n.ru/webhook/c6e0598a-89f3-48a6-a6bc-fde88548cc04',
-                { answers },
-                {
+            try {
+                logger.info('Sending POST request to n8n:', { url: n8nUrl, data: answers });
+
+                const postResponse = await axios.post(n8nUrl, answers, {
                     headers: {
                         'Content-Type': 'application/json'
-                    }
-                }
-            );
+                    },
+                    timeout: 30000,
+                    validateStatus: (status) => status < 500
+                });
 
-            return response.data.output;
-        } catch (error: any) {
-            logger.error('Failed to generate questions:', error);
-            throw error;
+                if (postResponse.data) {
+                    logger.info('Successfully received response from n8n via POST');
+                    return postResponse.data;
+                }
+
+            } catch (postError: any) {
+                logger.error('Both GET and POST requests failed:', {
+                    getError: getError.message,
+                    postError: postError.message,
+                    postResponse: postError.response?.data
+                });
+                throw new Error(`N8N service unavailable: ${postError.message}`);
+            }
         }
+
+        throw new Error('No response received from n8n service');
     }
 
     static async transcribeTikTok(tiktokId: string): Promise<any> {
@@ -84,7 +65,8 @@ export class N8nService {
                 {
                     headers: {
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    timeout: 30000
                 }
             );
 
@@ -103,7 +85,8 @@ export class N8nService {
                 {
                     headers: {
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    timeout: 30000
                 }
             );
 
@@ -122,7 +105,8 @@ export class N8nService {
                 {
                     headers: {
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    timeout: 30000
                 }
             );
 
@@ -141,7 +125,8 @@ export class N8nService {
                 {
                     headers: {
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    timeout: 30000
                 }
             );
 

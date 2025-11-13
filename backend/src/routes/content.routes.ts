@@ -11,6 +11,7 @@ router.get('/', ContentController.getUserContent);
 router.get('/stats', ContentController.getContentStats);
 router.get('/status', ContentController.getContentByStatus);
 router.post('/generate-ai', ContentController.generateAIContent);
+router.post('/download-package', ContentController.downloadContentPackage);
 router.post('/:id/publish', ContentController.publishContent);
 router.post('/:id/schedule', ContentController.scheduleContent);
 router.put('/:id', ContentController.updateContent);

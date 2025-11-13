@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
 import { SubscriptionService } from '../services/subscription.service.js';
-import { AccountService } from '../services/account.service.js';
 import { AppError } from '../exceptions/AppError.js';
 
 export class SubscriptionController {
@@ -9,7 +8,6 @@ export class SubscriptionController {
             if (!req.user) throw new AppError('Unauthorized', 401);
 
             const subscription = await SubscriptionService.getUserSubscription(req.user.id);
-            const billingHistory = await AccountService.getPaymentHistory(req.user.id);
 
             res.json({
                 success: true,
@@ -24,13 +22,7 @@ export class SubscriptionController {
                         videosLimit: subscription.plan_id?.monthly_limit || 10,
                         networksUsed: 0,
                         networksLimit: subscription.plan_id?.social_networks_limit || 3
-                    },
-                    billingHistory: billingHistory.map((payment: any) => ({
-                        date: new Date(payment.created_at).toLocaleDateString('ru-RU'),
-                        amount: payment.amount,
-                        status: payment.status,
-                        invoice: payment.invoice_url ? `INV-${payment._id.toString().slice(-6)}` : 'N/A'
-                    }))
+                    }
                 }
             });
         } catch (error: any) {

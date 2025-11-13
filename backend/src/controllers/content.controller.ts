@@ -5,18 +5,6 @@ import { SocialService } from '../services/social.service.js';
 import { AppError } from '../exceptions/AppError.js';
 
 export class ContentController {
-    /**
-     * Создать новый контент вручную (без AI)
-     * @param req - Запрос с данными для создания контента
-     * @param req.body.title - Заголовок контента
-     * @param req.body.content - Текст контента или URL медиа
-     * @param req.body.content_type - Тип контента: post, story, reels, video
-     * @param req.body.platform - Платформа для публикации
-     * @param req.body.ai_content_id - ID AI контента (если создан через AI)
-     * @param res - Ответ с созданным контентом
-     * @param next - Функция next Express для обработки ошибок
-     * @returns {Object} Созданный контент с ID и статусом
-     */
     static async createContent(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             if (!req.user) throw new AppError('Unauthorized', 401);
@@ -42,16 +30,6 @@ export class ContentController {
         }
     }
 
-    /**
-     * Опубликовать контент в выбранных социальных сетях
-     * @param req - Запрос с параметрами публикации
-     * @param req.body.contentId - ID контента для публикации
-     * @param req.body.platforms - Массив платформ для публикации
-     * @param req.body.scheduleDate - Дата публикации (если отложенная)
-     * @param res - Ответ с результатом публикации
-     * @param next - Функция next Express для обработки ошибок
-     * @returns {Object} Статус публикации и ссылки на посты
-     */
     static async publishContent(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             if (!req.user) throw new AppError('Unauthorized', 401);
@@ -77,16 +55,6 @@ export class ContentController {
         }
     }
 
-    /**
-     * Получить список всего контента пользователя
-     * @param req - Запрос с параметрами пагинации и фильтрации
-     * @param req.query.page - Номер страницы (необязательно)
-     * @param req.query.limit - Количество элементов на странице (необязательно)
-     * @param req.query.status - Фильтр по статусу (черновик, опубликован и т.д.)
-     * @param res - Ответ с массивом контента
-     * @param next - Функция next Express для обработки ошибок
-     * @returns {Object[]} Массив контента пользователя
-     */
     static async getUserContent(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             if (!req.user) throw new AppError('Unauthorized', 401);
@@ -102,15 +70,6 @@ export class ContentController {
         }
     }
 
-    /**
-     * Обновить существующий контент
-     * @param req - Запрос с ID контента и новыми данными
-     * @param req.params.id - ID контента для обновления
-     * @param req.body - Новые данные контента
-     * @param res - Ответ с обновленным контентом
-     * @param next - Функция next Express для обработки ошибок
-     * @returns {Object} Обновленный контент
-     */
     static async updateContent(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             if (!req.user) throw new AppError('Unauthorized', 401);
@@ -140,14 +99,6 @@ export class ContentController {
         }
     }
 
-    /**
-     * Получить конкретный контент по ID
-     * @param req - Запрос с ID контента
-     * @param req.params.id - ID контента
-     * @param res - Ответ с информацией о контенте
-     * @param next - Функция next Express для обработки ошибок
-     * @returns {Object} Информация о контенте
-     */
     static async getContent(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             if (!req.user) throw new AppError('Unauthorized', 401);
@@ -168,14 +119,6 @@ export class ContentController {
         }
     }
 
-    /**
-     * Удалить контент
-     * @param req - Запрос с ID контента для удаления
-     * @param req.params.id - ID контента
-     * @param res - Ответ с подтверждением удаления
-     * @param next - Функция next Express для обработки ошибок
-     * @returns {Object} Сообщение об успешном удалении
-     */
     static async deleteContent(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             if (!req.user) throw new AppError('Unauthorized', 401);
@@ -198,15 +141,6 @@ export class ContentController {
         }
     }
 
-    /**
-     * Обновить статус контента
-     * @param req - Запрос с ID контента и новым статусом
-     * @param req.params.id - ID контента
-     * @param req.body.status - Новый статус контента
-     * @param res - Ответ с обновленным контентом
-     * @param next - Функция next Express для обработки ошибок
-     * @returns {Object} Обновленный контент
-     */
     static async updateContentStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             if (!req.user) throw new AppError('Unauthorized', 401);
@@ -232,16 +166,6 @@ export class ContentController {
         }
     }
 
-    /**
-     * Запланировать публикацию контента
-     * @param req - Запрос с параметрами планирования
-     * @param req.params.id - ID контента
-     * @param req.body.scheduleDate - Дата и время публикации
-     * @param req.body.platforms - Массив платформ для публикации
-     * @param res - Ответ с запланированным контентом
-     * @param next - Функция next Express для обработки ошибок
-     * @returns {Object} Контент с установленным расписанием
-     */
     static async scheduleContent(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             if (!req.user) throw new AppError('Unauthorized', 401);
@@ -269,17 +193,6 @@ export class ContentController {
         }
     }
 
-    /**
-     * Создать контент на основе AI генерации
-     * @param req - Запрос с параметрами для AI генерации
-     * @param req.body.niche - Тема контента
-     * @param req.body.content_type - Тип контента
-     * @param req.body.platform - Платформа для публикации
-     * @param req.body.selectedQuestions - Выбранные вопросы для генерации
-     * @param res - Ответ с созданным контентом
-     * @param next - Функция next Express для обработки ошибок
-     * @returns {Object} Созданный AI контент
-     */
     static async generateAIContent(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             if (!req.user) throw new AppError('Unauthorized', 401);
@@ -290,7 +203,7 @@ export class ContentController {
                 selectedQuestions: req.body.selectedQuestions
             };
 
-            const aiContent = await AIService.generateContentScript(req.user.id, dto);
+            const aiContent = await AIService.generateContentScriptMock(req.user.id, dto);
 
             const content = await ContentService.createContent({
                 user_id: req.user.id,
@@ -311,14 +224,6 @@ export class ContentController {
         }
     }
 
-    /**
-     * Получить контент по статусу
-     * @param req - Запрос с фильтром по статусу
-     * @param req.query.status - Статус контента для фильтрации
-     * @param res - Ответ с отфильтрованным контентом
-     * @param next - Функция next Express для обработки ошибок
-     * @returns {Object[]} Массив контента с указанным статусом
-     */
     static async getContentByStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             if (!req.user) throw new AppError('Unauthorized', 401);
@@ -337,13 +242,6 @@ export class ContentController {
         }
     }
 
-    /**
-     * Получить статистику по контенту пользователя
-     * @param req - Запрос от авторизованного пользователя
-     * @param res - Ответ со статистикой контента
-     * @param next - Функция next Express для обработки ошибок
-     * @returns {Object} Статистика по контенту
-     */
     static async getContentStats(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             if (!req.user) throw new AppError('Unauthorized', 401);
@@ -368,6 +266,27 @@ export class ContentController {
             res.json({
                 success: true,
                 data: stats,
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    static async downloadContentPackage(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            if (!req.user) throw new AppError('Unauthorized', 401);
+
+            const { contentIds, format } = req.body;
+
+            const mockDownloadUrl = `/api/content/download/${Date.now()}.zip`;
+
+            res.json({
+                success: true,
+                data: {
+                    downloadUrl: mockDownloadUrl,
+                    format: format || 'zip',
+                    contentCount: contentIds?.length || 0
+                }
             });
         } catch (error) {
             next(error);

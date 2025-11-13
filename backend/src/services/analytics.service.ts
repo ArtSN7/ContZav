@@ -149,7 +149,13 @@ export class AnalyticsService {
             query.platform = platform;
         }
 
-        return Statistics.find(query).sort({ date: 1 });
+        const stats = await Statistics.find(query).sort({ date: 1 });
+
+        if (!stats || stats.length === 0) {
+            return [];
+        }
+
+        return stats;
     }
 
     private static aggregateAnalyticsData(analyticsData: any[], userContent: any[]): any {
@@ -162,14 +168,7 @@ export class AnalyticsService {
             total_shares: 0,
             total_followers_gained: 0,
             avg_engagement_rate: 0,
-            avg_click_through_rate: 0,
-            top_content: [],
-            platform_breakdown: [],
-            demographic_data: {
-                age_groups: [],
-                genders: [],
-                locations: []
-            }
+            avg_click_through_rate: 0
         };
 
         analyticsData.forEach(analytics => {
@@ -189,8 +188,6 @@ export class AnalyticsService {
         if (aggregated.total_views > 0) {
             aggregated.avg_click_through_rate = (aggregated.total_engagements / aggregated.total_views) * 100;
         }
-
-        aggregated.top_content = this.getTopContentFromData(analyticsData, userContent, 5);
 
         return aggregated;
     }
@@ -233,6 +230,14 @@ export class AnalyticsService {
     }
 
     private static async getDemographicData(userId: string): Promise<any> {
+        const userAnalytics = await UserAnalytics.findOne({
+            user_id: new Types.ObjectId(userId)
+        }).sort({ created_at: -1 });
+
+        if (userAnalytics && userAnalytics.demographic_data) {
+            return userAnalytics.demographic_data;
+        }
+
         return {
             age_groups: [
                 { age_group: '18-24', percentage: 25 },
@@ -255,53 +260,6 @@ export class AnalyticsService {
         };
     }
 
-    private static getTopContentFromData(analyticsData: any[], userContent: any[], limit: number): any[] {
-        const contentMap = new Map(userContent.map(c => [c._id.toString(), c]));
-        const contentAnalytics: Map<string, any> = new Map();
-
-        analyticsData.forEach(analytics => {
-            const content = contentMap.get(analytics.content_id.toString());
-            if (!content) return;
-
-            const contentIdStr = analytics.content_id.toString();
-            if (!contentAnalytics.has(contentIdStr)) {
-                contentAnalytics.set(contentIdStr, {
-                    content_id: contentIdStr,
-                    title: content.title,
-                    content_type: content.content_type,
-                    platform: content.platform,
-                    total_views: 0,
-                    total_reach: 0,
-                    total_engagements: 0,
-                    total_likes: 0,
-                    total_comments: 0,
-                    total_shares: 0,
-                    engagement_rate: 0,
-                    click_through_rate: 0,
-                    followers_gained: 0
-                });
-            }
-
-            const current = contentAnalytics.get(contentIdStr)!;
-            current.total_views += analytics.views || 0;
-            current.total_reach += analytics.reach || 0;
-            current.total_engagements += analytics.engagements || 0;
-            current.total_likes += analytics.likes || 0;
-            current.total_comments += analytics.comments || 0;
-            current.total_shares += analytics.shares || 0;
-            current.followers_gained += analytics.followers_gained || 0;
-        });
-
-        return Array.from(contentAnalytics.values())
-            .map(item => ({
-                ...item,
-                engagement_rate: item.total_reach > 0 ? (item.total_engagements / item.total_reach) * 100 : 0,
-                click_through_rate: item.total_views > 0 ? (item.total_engagements / item.total_views) * 100 : 0
-            }))
-            .sort((a, b) => b.total_engagements - a.total_engagements)
-            .slice(0, limit);
-    }
-
     private static calculateComparison(current: any, previous: any): any {
         const calculatePercentageChange = (currentVal: number, previousVal: number) => {
             if (previousVal === 0) return currentVal > 0 ? 100 : 0;
@@ -321,6 +279,33 @@ export class AnalyticsService {
         };
     }
 
+    static async exportAnalytics(userId: string, format: string, startDate: Date, endDate: Date): Promise<any> {
+        const analyticsData = await this.getUserAnalytics(userId, startDate, endDate);
+        const topContent = await this.getTopContent(userId, startDate, endDate, 10);
+
+        const exportData = {
+            period: {
+                start: startDate,
+                end: endDate
+            },
+            summary: {
+                total_views: analyticsData.total_views,
+                total_engagements: analyticsData.total_engagements,
+                avg_engagement_rate: analyticsData.avg_engagement_rate,
+                total_followers_gained: analyticsData.total_followers_gained
+            },
+            platform_breakdown: analyticsData.platform_breakdown,
+            top_content: topContent,
+            demographic_data: analyticsData.demographic_data
+        };
+
+        return {
+            downloadUrl: `/api/analytics/export/${userId}_${startDate.toISOString()}_${endDate.toISOString()}.${format}`,
+            format,
+            data: exportData
+        };
+    }
+
     private static getEmptyUserAnalytics(): any {
         return {
             total_views: 0,
@@ -332,7 +317,6 @@ export class AnalyticsService {
             total_followers_gained: 0,
             avg_engagement_rate: 0,
             avg_click_through_rate: 0,
-            top_content: [],
             platform_breakdown: [],
             demographic_data: {
                 age_groups: [],
