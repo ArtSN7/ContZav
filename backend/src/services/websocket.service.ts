@@ -1,58 +1,61 @@
-import { Server } from 'socket.io';
-import { logger } from '../utils/logger.js';
+import { Server as SocketIOServer } from 'socket.io';
+import jwt from 'jsonwebtoken';
+import { config } from '../config/index.js';
 
 export class WebSocketService {
-    private static io: Server;
+    private static io: SocketIOServer;
 
-    static initialize(ioInstance: Server) {
-        this.io = ioInstance;
+    static initialize(io: SocketIOServer) {
+        this.io = io;
 
-        this.io.on('connection', (socket) => {
-            logger.info(`Client connected: ${socket.id}`);
+        io.use((socket, next) => {
+            const token = socket.handshake.auth.token;
+            if (!token) {
+                return next(new Error('Authentication error'));
+            }
 
-            socket.on('join-user-room', (userId: string) => {
-                socket.join(`user-${userId}`);
-                logger.info(`Client ${socket.id} joined user room: user-${userId}`);
-            });
-
-            socket.on('disconnect', () => {
-                logger.info(`Client disconnected: ${socket.id}`);
-            });
+            try {
+                const decoded = jwt.verify(token, config.JWT_SECRET);
+                socket.data.user = decoded;
+                next();
+            } catch (error) {
+                next(new Error('Authentication error'));
+            }
         });
 
-        return this.io;
-    }
+        io.on('connection', (socket) => {
+            console.log('User connected:', socket.data.user.sub);
 
-    static getIO() {
-        if (!this.io) {
-            throw new Error('WebSocket service not initialized');
-        }
-        return this.io;
+            socket.join(`user:${socket.data.user.sub}`);
+
+            socket.on('disconnect', () => {
+                console.log('User disconnected:', socket.data.user.sub);
+            });
+        });
     }
 
     static emitToUser(userId: string, event: string, data: any) {
         if (this.io) {
-            this.io.to(`user-${userId}`).emit(event, data);
+            this.io.to(`user:${userId}`).emit(event, data);
         }
     }
 
-    static emitGenerationProgress(userId: string, contentId: string, progress: number, message: string) {
-        this.emitToUser(userId, 'generation-progress', { contentId, progress, message });
+    static emitGenerationProgress(userId: string, contentId: string, progress: number) {
+        this.emitToUser(userId, 'generation-progress', {
+            contentId,
+            progress,
+            message: `Generation progress: ${progress}%`
+        });
     }
 
     static emitVideoReady(userId: string, contentId: string, videoUrl: string) {
-        this.emitToUser(userId, 'video-ready', { contentId, videoUrl });
+        this.emitToUser(userId, 'video-ready', {
+            contentId,
+            videoUrl
+        });
     }
 
-    static emitContentReady(userId: string, contentId: string, content: any) {
-        this.emitToUser(userId, 'content-ready', { contentId, content });
-    }
-
-    static emitQuestionsReady(userId: string, requestId: string, questions: string[]) {
-        this.emitToUser(userId, 'questions-ready', { requestId, questions });
-    }
-
-    static emitGenerationError(userId: string, requestId: string, error: string) {
-        this.emitToUser(userId, 'generation-error', { requestId, error });
+    static emitContentReady(userId: string) {
+        this.emitToUser(userId, 'content-ready', {});
     }
 }

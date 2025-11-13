@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { api } from "@/utils/api";
 import { useAuth } from "./AuthContext";
+import { useWebSocket } from "@/hooks/useWebSocket";
 
 interface WebSocketMessage {
   type: "generation-progress" | "video-ready" | "content-ready";
@@ -171,7 +172,6 @@ interface AppContextType {
   connectWebSocket: () => void;
   disconnectWebSocket: () => void;
 
-  // Real-time updates
   generationProgress: { [key: string]: number };
   videoGenerationStatus: { [key: string]: string };
 
@@ -305,6 +305,8 @@ interface AppProviderProps {
 
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const { token } = useAuth();
+  const { socket, isConnected } = useWebSocket();
+
   const [securityData, setSecurityData] = useState<SecurityData | null>(null);
   const [loadingSecurity, setLoadingSecurity] = useState(false);
   const [apiKeys, setApiKeys] = useState<ApiKeys>({
@@ -351,7 +353,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     useState(false);
   const [statistics, setStatistics] = useState<any>(null);
   const [loadingStatistics, setLoadingStatistics] = useState(false);
-  const [isWebSocketConnected, setIsWebSocketConnected] = useState(false);
+
   const [generationProgress, setGenerationProgress] = useState<{
     [key: string]: number;
   }>({});
@@ -366,112 +368,49 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     engagementRate: 0,
   });
   const [loadingDashboardStats, setLoadingDashboardStats] = useState(false);
-  const [socket, setSocket] = useState<WebSocket | null>(null);
+
+  useEffect(() => {
+    if (socket) {
+      socket.on("generation-progress", (data: any) => {
+        setGenerationProgress((prev) => ({
+          ...prev,
+          [data.contentId]: data.progress,
+        }));
+      });
+
+      socket.on("video-ready", (data: any) => {
+        setVideoGenerationStatus((prev) => ({
+          ...prev,
+          [data.contentId]: "ready",
+        }));
+        if (videoPreview?.id === data.contentId) {
+          refreshVideoPreview();
+        }
+      });
+
+      socket.on("content-ready", () => {
+        refreshRecentActivities();
+        refreshContentStats();
+      });
+    }
+
+    return () => {
+      if (socket) {
+        socket.off("generation-progress");
+        socket.off("video-ready");
+        socket.off("content-ready");
+      }
+    };
+  }, [socket, videoPreview]);
 
   const connectWebSocket = () => {
-    if (!token) return;
-
-    if (socket) {
-      socket.close();
-    }
-
-    try {
-      const ws = new WebSocket(`ws://localhost:5090/socket.io/`);
-
-      ws.onopen = () => {
-        console.log("WebSocket connected");
-        setIsWebSocketConnected(true);
-        setSocket(ws);
-
-        ws.send(
-          JSON.stringify({
-            type: "authenticate",
-            token: token,
-          })
-        );
-
-        if (profileData?.id) {
-          ws.send(
-            JSON.stringify({
-              type: "join-user-room",
-              userId: profileData.id,
-            })
-          );
-        }
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data);
-
-          if (message.type === "authenticated" && message.success) {
-            console.log("WebSocket authenticated");
-          }
-
-          if (message.type === "room-joined") {
-            console.log("Joined room:", message.room);
-          }
-
-          switch (message.type) {
-            case "generation-progress":
-              setGenerationProgress((prev) => ({
-                ...prev,
-                [message.data.contentId]: message.data.progress,
-              }));
-              break;
-
-            case "video-ready":
-              setVideoGenerationStatus((prev) => ({
-                ...prev,
-                [message.data.contentId]: "ready",
-              }));
-              if (videoPreview?.id === message.data.contentId) {
-                refreshVideoPreview();
-              }
-              break;
-
-            case "content-ready":
-              refreshRecentActivities();
-              refreshContentStats();
-              break;
-          }
-        } catch (error) {
-          console.error("WebSocket message error:", error);
-        }
-      };
-
-      ws.onclose = (event) => {
-        console.log("WebSocket disconnected:", event.code, event.reason);
-        setIsWebSocketConnected(false);
-        setSocket(null);
-
-        if (event.code !== 1000) {
-          setTimeout(() => {
-            if (token) {
-              console.log("Attempting WebSocket reconnection...");
-              connectWebSocket();
-            }
-          }, 5000);
-        }
-      };
-
-      ws.onerror = (error) => {
-        console.error("WebSocket error:", error);
-        setIsWebSocketConnected(false);
-      };
-
-      setSocket(ws);
-    } catch (error) {
-      console.error("WebSocket connection error:", error);
-    }
+    console.log("WebSocket connection managed by Socket.IO");
   };
 
   const disconnectWebSocket = () => {
     if (socket) {
-      socket.close();
-      setSocket(null);
+      socket.disconnect();
     }
-    setIsWebSocketConnected(false);
   };
 
   const fetchSecurityData = async () => {
@@ -1263,7 +1202,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       fetchSecurityData();
       fetchSocialAccounts();
       fetchSubscriptionData();
-      connectWebSocket();
       fetchApiKeys();
       fetchAvatars();
       fetchContentStats();
@@ -1287,8 +1225,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       });
       fetchStatistics({ startDate: defaultStartDate, endDate: defaultEndDate });
     }
-
-    return () => disconnectWebSocket();
   }, [token]);
 
   const value: AppContextType = {
@@ -1365,7 +1301,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     dashboardStats,
     loadingDashboardStats,
     refreshDashboardStats,
-    isWebSocketConnected,
+    isWebSocketConnected: isConnected,
     generationProgress,
     videoGenerationStatus,
     connectWebSocket,

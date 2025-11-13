@@ -8,6 +8,7 @@ import React, {
 import { useNavigate } from "react-router";
 import { PROFILE_ROUTE, AUTH_ROUTE } from "@/utils/CONSTANTS.ts";
 import { api } from "@/utils/api";
+import { AvatarGuideModal } from "@/components/avatar/AvatarGuideModal";
 
 interface AuthContextType {
   token: string | null;
@@ -19,6 +20,8 @@ interface AuthContextType {
   loading: boolean;
   error: string | null;
   clearError: () => void;
+  showAvatarGuide: boolean;
+  closeAvatarGuide: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -41,6 +44,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showAvatarGuide, setShowAvatarGuide] = useState(false);
   const navigate = useNavigate();
 
   const isAuthenticated = !!token;
@@ -66,6 +70,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (response.success && response.data.accessToken) {
         setAuthToken(response.data.accessToken);
+        setShowAvatarGuide(true);
         navigate(PROFILE_ROUTE);
       } else {
         throw new Error(response.error || "Login failed");
@@ -86,6 +91,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (response.success && response.data.accessToken) {
         setAuthToken(response.data.accessToken);
+        setShowAvatarGuide(true);
         navigate(PROFILE_ROUTE);
       } else {
         throw new Error(response.error || "Registration failed");
@@ -122,6 +128,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       clearAuthToken();
       navigate(AUTH_ROUTE);
     }
+  };
+
+  const closeAvatarGuide = () => {
+    setShowAvatarGuide(false);
   };
 
   useEffect(() => {
@@ -164,7 +174,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loading,
     error,
     clearError,
+    showAvatarGuide,
+    closeAvatarGuide,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      {showAvatarGuide && <AvatarGuideModal onClose={closeAvatarGuide} />}
+    </AuthContext.Provider>
+  );
 };
