@@ -1,45 +1,71 @@
 import { Request, Response } from 'express';
-import { AIService } from '../services/ai.service.js';
-import { logger } from '../utils/logger.js';
+import { WebSocketService } from '../services/websocket.service.js';
+import { AIContent } from '../models/AIContent.js';
+import { AIGenerationRequest } from '../models/AIGeneration.js';
 
 export class WebhookController {
-    static async handleGenerationResult(req: Request, res: Response) {
+    static async handleGenerationProgress(req: Request, res: Response) {
         try {
-            const { requestId, result, error } = req.body;
+            const { userId, contentId, progress, message } = req.body;
 
-            logger.info(`Received generation result for request ${requestId}`, { result, error });
+            if (userId && contentId) {
+                WebSocketService.emitToUser(userId, 'generation-progress', {
+                    contentId,
+                    progress,
+                    message
+                });
+            }
 
-            await AIService.handleGenerationResult(requestId, result, error);
-
-            res.json({
-                success: true,
-                message: 'Generation result processed successfully'
-            });
-        } catch (error: any) {
-            logger.error('Error handling generation result:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Failed to process generation result'
-            });
+            res.status(200).json({ success: true });
+        } catch (error) {
+            console.error('Error handling generation progress:', error);
+            res.status(500).json({ error: 'Internal server error' });
         }
     }
 
-    static async handlePublicationStatus(req: Request, res: Response) {
+    static async handleVideoReady(req: Request, res: Response) {
         try {
-            const { contentId, status, error } = req.body;
+            const { contentId, videoUrl } = req.body;
 
-            logger.info(`Received publication status for content ${contentId}`, { status, error });
+            if (contentId) {
+                const content = await AIContent.findById(contentId);
+                if (content && videoUrl) {
+                    await AIContent.findByIdAndUpdate(contentId, {
+                        video_url: videoUrl,
+                        status: 'ready'
+                    });
 
-            res.json({
-                success: true,
-                message: 'Publication status processed successfully'
-            });
-        } catch (error: any) {
-            logger.error('Error handling publication status:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Failed to process publication status'
-            });
+                    WebSocketService.emitVideoReady(content.user_id.toString(), contentId, videoUrl);
+                }
+            }
+
+            res.status(200).json({ success: true });
+        } catch (error) {
+            console.error('Error handling video ready:', error);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+
+    static async handleContentReady(req: Request, res: Response) {
+        try {
+            const { generationRequestId, content } = req.body;
+
+            if (generationRequestId) {
+                const generationRequest = await AIGenerationRequest.findById(generationRequestId);
+                if (generationRequest) {
+                    await AIGenerationRequest.findByIdAndUpdate(generationRequestId, {
+                        status: 'completed',
+                        result: content
+                    });
+
+                    WebSocketService.emitContentReady(generationRequest.user_id.toString());
+                }
+            }
+
+            res.status(200).json({ success: true });
+        } catch (error) {
+            console.error('Error handling content ready:', error);
+            res.status(500).json({ error: 'Internal server error' });
         }
     }
 }

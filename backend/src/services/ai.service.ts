@@ -70,41 +70,19 @@ export class AIService {
         };
 
         try {
-            const response = await N8nService.generateQuestions(answers);
-            console.log("Raw response from n8n:", response);
-
-            if (!response) {
-                throw new Error('Empty response from n8n');
-            }
+            const response = await N8nService.generateNicheQuestions(answers);
+            console.log("Raw niche questions response from n8n:", response);
 
             let questions: string[] = [];
 
-            if (typeof response === 'string') {
-                questions = response.split('\n')
-                    .filter(q => q.trim().length > 0)
-                    .map(q => q.trim());
-            } else if (Array.isArray(response)) {
-                questions = response.map(item =>
-                    typeof item === 'string' ? item : JSON.stringify(item)
-                );
-            } else if (response.output) {
-                if (typeof response.output === 'string') {
+            if (response && response.output) {
+                if (Array.isArray(response.output)) {
+                    questions = response.output;
+                } else if (typeof response.output === 'string') {
                     questions = response.output.split('\n')
                         .filter(q => q.trim().length > 0)
                         .map(q => q.trim());
-                } else if (Array.isArray(response.output)) {
-                    questions = response.output;
-                } else if (response.output.questions) {
-                    questions = response.output.questions;
-                } else {
-                    questions = Object.values(response.output).map((v: any) => String(v));
                 }
-            } else if (response.questions) {
-                questions = response.questions;
-            } else {
-                questions = Object.values(response)
-                    .filter((v: any) => typeof v === 'string')
-                    .map((v: any) => v as string);
             }
 
             if (questions.length === 0) {
@@ -121,16 +99,11 @@ export class AIService {
                 q.replace(/^[0-9]+[\.\)]\s*/, '').trim()
             ).filter(q => q.length > 0);
 
-            console.log("Processed questions:", questions);
+            console.log("Processed niche questions:", questions);
             return questions;
 
         } catch (error: any) {
-            console.error('N8N error details:', {
-                message: error.message,
-                response: error.response?.data,
-                status: error.response?.status
-            });
-
+            console.error('N8N niche questions error:', error.message);
             return [
                 `Какие тренды в нише "${dto.niche}" сейчас наиболее популярны?`,
                 `Какой контент в формате "${dto.contentType}" лучше всего работает в этой нише?`,
@@ -140,6 +113,18 @@ export class AIService {
     }
 
     static async generateContentScript(userId: string, dto: any): Promise<any> {
+        const generationRequest = new AIGenerationRequest({
+            user_id: new Types.ObjectId(userId),
+            prompt: `Generate content for niche: ${dto.niche}, type: ${dto.contentType}`,
+            parameters: {
+                niche: dto.niche,
+                contentType: dto.contentType,
+                questions: dto.selectedQuestions
+            },
+            status: 'processing'
+        });
+        await generationRequest.save();
+
         const answers = {
             niche: dto.niche,
             contentType: dto.contentType,
@@ -148,6 +133,8 @@ export class AIService {
         };
 
         try {
+            this.emitGenerationUpdate(userId, generationRequest._id.toString(), 30);
+
             const output = await N8nService.generateQuestions(answers);
             console.log("Raw content generation response:", output);
 
@@ -165,16 +152,27 @@ export class AIService {
                 script = JSON.stringify(output);
             }
 
+            this.emitGenerationUpdate(userId, generationRequest._id.toString(), 80);
+
             const content = new AIContent({
                 user_id: new Types.ObjectId(userId),
-                title: dto.niche,
+                title: dto.niche || 'Generated Content',
                 content: script,
-                content_type: dto.contentType,
+                content_type: dto.contentType || 'video',
                 platform: 'multiple',
                 selected_questions: dto.selectedQuestions || [],
-                status: 'ready'
+                status: 'ready',
+                ai_generation_request_id: generationRequest._id
             });
             await content.save();
+
+            await AIGenerationRequest.findByIdAndUpdate(generationRequest._id, {
+                status: 'completed',
+                result: { contentId: content._id }
+            });
+
+            this.emitGenerationUpdate(userId, generationRequest._id.toString(), 100);
+            this.emitContentReady(userId, content._id.toString());
 
             return {
                 ...content.toObject(),
@@ -184,16 +182,22 @@ export class AIService {
         } catch (error: any) {
             console.error('Error in generateContentScript:', error);
 
+            await AIGenerationRequest.findByIdAndUpdate(generationRequest._id, {
+                status: 'failed',
+                error: error.message
+            });
+
             const fallbackContent = `Контент о ${dto.niche} в формате ${dto.contentType}. Сгенерирован автоматически.`;
 
             const content = new AIContent({
                 user_id: new Types.ObjectId(userId),
-                title: dto.niche,
+                title: dto.niche || 'Generated Content',
                 content: fallbackContent,
-                content_type: dto.contentType,
+                content_type: dto.contentType || 'video',
                 platform: 'multiple',
                 selected_questions: dto.selectedQuestions || [],
-                status: 'ready'
+                status: 'ready',
+                ai_generation_request_id: generationRequest._id
             });
             await content.save();
 
@@ -213,6 +217,8 @@ export class AIService {
 
         const apiKeys = await this.getUserApiKeys(content.user_id.toString());
 
+        this.emitGenerationUpdate(content.user_id.toString(), contentId, 20);
+
         const trendwatching = {
             content: content.content,
             title: content.title,
@@ -223,6 +229,8 @@ export class AIService {
 
         const avatarScript = await N8nService.generateAvatarScript(trendwatching, systemprompt);
 
+        this.emitGenerationUpdate(content.user_id.toString(), contentId, 50);
+
         const voiceId = "default-voice";
 
         const videoResult = await N8nService.generateAvatarVideo(
@@ -232,10 +240,15 @@ export class AIService {
             avatarScript
         );
 
+        this.emitGenerationUpdate(content.user_id.toString(), contentId, 90);
+
         await AIContent.findByIdAndUpdate(contentId, {
             video_url: videoResult.videoUrl || videoResult.url,
             status: 'ready'
         });
+
+        this.emitGenerationUpdate(content.user_id.toString(), contentId, 100);
+        this.emitVideoReadyUpdate(content.user_id.toString(), contentId, videoResult.videoUrl || videoResult.url);
     }
 
     static async transcribeTikTok(userId: string, tiktokId: string): Promise<any> {
@@ -345,6 +358,13 @@ export class AIService {
         WebSocketService.emitToUser(userId, 'video-ready', {
             contentId,
             videoUrl
+        });
+    }
+
+    static async emitContentReady(userId: string, contentId: string) {
+        WebSocketService.emitToUser(userId, 'content-ready', {
+            contentId,
+            message: 'Content generation completed'
         });
     }
 }

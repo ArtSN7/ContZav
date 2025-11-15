@@ -57,6 +57,35 @@ export class N8nService {
         throw new Error('No response received from n8n service');
     }
 
+    static async generateNicheQuestions(answers: any): Promise<any> {
+        const n8nUrl = 'https://nashnmain8n.ru/webhook/d6e2d6ed-f04f-40b6-b1d9-5d80131052bc';
+
+        try {
+            logger.info('Sending POST request for niche questions:', { url: n8nUrl, data: answers });
+
+            const response = await axios.post(n8nUrl, answers, {
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                timeout: 30000,
+                validateStatus: (status) => status < 500
+            });
+
+            console.log(response)
+
+            if (response.data) {
+                logger.info('Successfully received niche questions from n8n');
+                return response.data;
+            }
+
+        } catch (error: any) {
+            logger.error('Niche questions request failed:', error.message);
+            throw error;
+        }
+
+        throw new Error('No response received from niche questions service');
+    }
+
     static async transcribeTikTok(tiktokId: string): Promise<any> {
         try {
             const response = await axios.post(

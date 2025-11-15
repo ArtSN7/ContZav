@@ -3,7 +3,9 @@ import { WebhookController } from '../controllers/webhook.controller.js';
 
 const router = Router();
 
-router.post('/generation-result', WebhookController.handleGenerationResult);
-router.post('/publication-status', WebhookController.handlePublicationStatus);
+
+router.post('/webhook/generation-progress', WebhookController.handleGenerationProgress);
+router.post('/webhook/video-ready', WebhookController.handleVideoReady);
+router.post('/webhook/content-ready', WebhookController.handleContentReady);
 
 export default router;
