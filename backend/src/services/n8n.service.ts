@@ -1,3 +1,4 @@
+// n8n.service.ts
 import axios from 'axios';
 import { logger } from '../utils/logger.js';
 
@@ -13,45 +14,24 @@ export class N8nService {
                 }
             });
 
-            logger.info(`Sending GET request to n8n: ${n8nUrl}?${queryParams.toString()}`);
+            const urlWithParams = `${n8nUrl}?${queryParams.toString()}`;
+            logger.info(`Sending GET request to n8n: ${urlWithParams}`);
 
-            const getResponse = await axios.get(`${n8nUrl}?${queryParams.toString()}`, {
+            const response = await axios.get(urlWithParams, {
                 timeout: 30000,
                 validateStatus: (status) => status < 500
             });
 
-            if (getResponse.data) {
-                logger.info('Successfully received response from n8n via GET');
-                return getResponse.data;
+            // Если ответ пустой, считаем что запрос принят в обработку
+            // n8n отправит результат позже через вебхук на наш сервер
+            if (response.status === 200) {
+                logger.info('N8n request accepted, waiting for webhook callback');
+                return { status: 'processing' };
             }
 
-        } catch (getError: any) {
-            logger.warn('GET request failed, trying POST:', getError.message);
-
-            try {
-                logger.info('Sending POST request to n8n:', { url: n8nUrl, data: answers });
-
-                const postResponse = await axios.post(n8nUrl, answers, {
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    timeout: 30000,
-                    validateStatus: (status) => status < 500
-                });
-
-                if (postResponse.data) {
-                    logger.info('Successfully received response from n8n via POST');
-                    return postResponse.data;
-                }
-
-            } catch (postError: any) {
-                logger.error('Both GET and POST requests failed:', {
-                    getError: getError.message,
-                    postError: postError.message,
-                    postResponse: postError.response?.data
-                });
-                throw new Error(`N8N service unavailable: ${postError.message}`);
-            }
+        } catch (error: any) {
+            logger.error('N8N request failed:', error.message);
+            throw new Error(`N8N service unavailable: ${error.message}`);
         }
 
         throw new Error('No response received from n8n service');
@@ -61,21 +41,25 @@ export class N8nService {
         const n8nUrl = 'https://nashnmain8n.ru/webhook/d6e2d6ed-f04f-40b6-b1d9-5d80131052bc';
 
         try {
-            logger.info('Sending POST request for niche questions:', { url: n8nUrl, data: answers });
+            const queryParams = new URLSearchParams();
+            Object.keys(answers).forEach(key => {
+                if (answers[key] !== undefined && answers[key] !== null) {
+                    queryParams.append(key, String(answers[key]));
+                }
+            });
 
-            const response = await axios.post(n8nUrl, answers, {
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+            const urlWithParams = `${n8nUrl}?${queryParams.toString()}`;
+            logger.info(`Sending GET request for niche questions: ${urlWithParams}`);
+
+            const response = await axios.get(urlWithParams, {
                 timeout: 30000,
                 validateStatus: (status) => status < 500
             });
 
-            console.log(response)
-
-            if (response.data) {
-                logger.info('Successfully received niche questions from n8n');
-                return response.data;
+            // Если ответ пустой, считаем что запрос принят
+            if (response.status === 200) {
+                logger.info('Niche questions request accepted, waiting for webhook callback');
+                return { status: 'processing' };
             }
 
         } catch (error: any) {
@@ -86,6 +70,7 @@ export class N8nService {
         throw new Error('No response received from niche questions service');
     }
 
+    // остальные методы без изменений
     static async transcribeTikTok(tiktokId: string): Promise<any> {
         try {
             const response = await axios.post(

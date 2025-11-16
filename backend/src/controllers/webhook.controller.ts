@@ -6,7 +6,9 @@ import { AIGenerationRequest } from '../models/AIGeneration.js';
 export class WebhookController {
     static async handleGenerationProgress(req: Request, res: Response) {
         try {
+            console.log(req.body);
             const { userId, contentId, progress, message } = req.body;
+            console.log({ userId, contentId, progress, message });
 
             if (userId && contentId) {
                 WebSocketService.emitToUser(userId, 'generation-progress', {
@@ -25,7 +27,9 @@ export class WebhookController {
 
     static async handleVideoReady(req: Request, res: Response) {
         try {
+            console.log(req.body);
             const { contentId, videoUrl } = req.body;
+            console.log({ contentId, videoUrl });
 
             if (contentId) {
                 const content = await AIContent.findById(contentId);
@@ -48,7 +52,10 @@ export class WebhookController {
 
     static async handleContentReady(req: Request, res: Response) {
         try {
+            console.log(req.body);
             const { generationRequestId, content } = req.body;
+
+            console.log({ generationRequestId, content });
 
             if (generationRequestId) {
                 const generationRequest = await AIGenerationRequest.findById(generationRequestId);

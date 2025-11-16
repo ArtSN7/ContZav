@@ -1,3 +1,4 @@
+// ai.service.ts
 import { AIContent } from '../models/AIContent.js';
 import { AIGenerationRequest } from '../models/AIGeneration.js';
 import { Avatar } from '../models/Avatar.js';
@@ -64,17 +65,24 @@ export class AIService {
 
     static async generateNicheQuestions(userId: string, dto: any): Promise<string[]> {
         const answers = {
-            niche: dto.niche,
-            contentType: dto.contentType,
-            userId: userId
+            niche: dto.niche
         };
 
         try {
             const response = await N8nService.generateNicheQuestions(answers);
-            console.log("Raw niche questions response from n8n:", response);
+
+            if (response.status === 'processing') {
+                console.log("N8N processing request, returning temporary questions");
+                return [
+                    `Какие тренды в нише "${dto.niche}" сейчас наиболее популярны?`,
+                    `Какой контент в формате "${dto.contentType}" лучше всего работает в этой нише?`,
+                    `Какие проблемы вашей аудитории в нише "${dto.niche}" можно решить с помощью контента?`,
+                    `Какие вопросы чаще всего задают новички в нише "${dto.niche}"?`,
+                    `Как выделиться среди конкурентов в нише "${dto.niche}"?`
+                ];
+            }
 
             let questions: string[] = [];
-
             if (response && response.output) {
                 if (Array.isArray(response.output)) {
                     questions = response.output;
@@ -85,25 +93,15 @@ export class AIService {
                 }
             }
 
-            if (questions.length === 0) {
-                questions = [
-                    `Какие тренды в нише "${dto.niche}" сейчас наиболее популярны?`,
-                    `Какой контент в формате "${dto.contentType}" лучше всего работает в этой нише?`,
-                    `Какие проблемы вашей аудитории в нише "${dto.niche}" можно решить с помощью контента?`,
-                    `Какие вопросы чаще всего задают новички в нише "${dto.niche}"?`,
-                    `Как выделиться среди конкурентов в нише "${dto.niche}"?`
-                ];
-            }
-
             questions = questions.slice(0, 10).map(q =>
                 q.replace(/^[0-9]+[\.\)]\s*/, '').trim()
             ).filter(q => q.length > 0);
 
-            console.log("Processed niche questions:", questions);
             return questions;
 
         } catch (error: any) {
             console.error('N8N niche questions error:', error.message);
+
             return [
                 `Какие тренды в нише "${dto.niche}" сейчас наиболее популярны?`,
                 `Какой контент в формате "${dto.contentType}" лучше всего работает в этой нише?`,
@@ -128,8 +126,7 @@ export class AIService {
         const answers = {
             niche: dto.niche,
             contentType: dto.contentType,
-            questions: dto.selectedQuestions,
-            userId: userId
+            questions: dto.selectedQuestions
         };
 
         try {

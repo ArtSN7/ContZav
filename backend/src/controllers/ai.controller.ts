@@ -5,7 +5,8 @@ import { AIContent } from '../models/AIContent.js';
 export class AIController {
     static async generateNicheQuestions(req: Request, res: Response) {
         try {
-            const userId = req.user!.id;
+            const userId = "req.user!.id";
+            // const userId = req.user!.id;
             const dto = req.body;
 
             const questions = await AIService.generateNicheQuestions(userId, dto);

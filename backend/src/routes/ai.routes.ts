@@ -6,7 +6,7 @@ import { authMiddleware } from '../middleware/auth.middleware.js';
 
 const router = Router();
 
-router.use(authMiddleware);
+// router.use(authMiddleware);
 
 router.post('/questions', AIController.generateNicheQuestions);
 router.post('/content', AIController.generateContent);
